@@ -44,6 +44,12 @@ class GovernanceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             workflow("smartfin-ai/other", SHA, "node-npm")
 
+    def test_future_private_consumer_needs_no_public_registration(self):
+        result = workflow("Nisan-Sinai/private-future-app", SHA, "node-npm")
+        self.assertIn(f"node-ci.yml@{SHA}", result)
+        public = json.loads((ROOT / "policies/public-repositories.json").read_text())
+        self.assertNotIn("private-future-app", {row["name"] for row in public["repositories"]})
+
     def test_ruleset_specific_and_fail_closed(self):
         x = create("dev", ["verify", "Vercel – my-web"], strict=True)
         self.assertEqual(x["conditions"]["ref_name"]["include"], ["refs/heads/dev"])

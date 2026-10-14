@@ -13,7 +13,7 @@
 
 ## Deep QA controls
 
-- `Hub guard` now runs `actionlint` (fixed release version **and** verified archive SHA-256) on the full `.github/workflows` tree; 20 original policy tests plus simulated GitHub API misuse cases run on every PR.
+- `Hub guard` runs `actionlint` (fixed release version **and** verified archive SHA-256) plus pinned `zizmor` security analysis on the full Actions configuration; 38 policy, mutation and simulated GitHub API tests run on every PR.
 - Third-party GitHub Actions are pinned to exact immutable **40-character commit hashes**, not mutable `@v4` tags. The code-level validation rejects new unpinned actions and `continue-on-error: true` in all reusable gates.
 - Dependabot is dry-run by default. Opt-in merging waits for *all* check runs on the precise PR head to finish, including newly added/unlisted checks, and refuses failures. Fake API tests assert that unknown pending checks cannot be outrun.
 - Reusable Vercel gates fail rather than silently produce a skipped/green job when invoked by an unsupported event or an untrusted fork.

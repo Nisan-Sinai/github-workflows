@@ -5,7 +5,6 @@ Do not add private repository metadata: workflow logs and summaries may be publi
 """
 import json
 import os
-import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -45,7 +44,7 @@ def audit(entry: dict, owner: str) -> dict:
     b, e = get(f"{endpoint}/branches/{branch}")
     response["protected"] = bool(b.get("protected")) if b else None
     response["branch_error"] = e
-    d, e = get(f"{endpoint}/contents/.github/dependabot.yml")
+    _, e = get(f"{endpoint}/contents/.github/dependabot.yml")
     response["dependabot"] = e is None
     r, e = get(f"{endpoint}/rulesets")
     response["active_rulesets"] = len([x for x in r if x.get("enforcement") == "active"]) if isinstance(r, list) else None

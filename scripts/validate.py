@@ -92,13 +92,17 @@ def validate():
                     check(step.get('continue-on-error') != 'true',
                           f'{path}: silent failure suppression is forbidden')
         if path.name == 'dependabot-automerge.yml':
-            check(data['permissions'].get('contents') == 'write', 'Auto-merge needs scoped write')
-            check(data['permissions'].get('pull-requests') == 'write', 'Auto-merge needs PR write')
+            gate_permissions = data['jobs']['gate'].get('permissions', {})
+            check(gate_permissions.get('contents') == 'write', 'Auto-merge needs scoped write')
+            check(gate_permissions.get('pull-requests') == 'write', 'Auto-merge needs PR write')
             check(triggers['workflow_call']['inputs']['enable-merge']['default'] == 'false',
                   'Auto-merge must default to a dry run')
         elif path.name == 'vercel-preview-deployment.yml':
-            check(data['permissions'].get('deployments') == 'write', 'Preview registration needs deploy write')
-            check(data['permissions'].get('contents') == 'read', 'Preview registration needs read-only code')
+            preview_permissions = data['jobs']['verify-preview'].get('permissions', {})
+            check(preview_permissions.get('deployments') == 'write',
+                  'Preview registration needs deploy write')
+            check(preview_permissions.get('contents') == 'read',
+                  'Preview registration needs read-only code')
         else:
             check(data['permissions'].get('contents') == 'read', f'{path}: unnecessary code write permission')
             check(data['permissions'].get('pull-requests') != 'write', f'{path}: unnecessary PR writes')

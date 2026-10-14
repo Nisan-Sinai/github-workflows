@@ -62,7 +62,8 @@ class ReusableWorkflowContractTests(unittest.TestCase):
     def test_dependency_automation_is_dry_run_by_default(self):
         f = flow('dependabot-automerge.yml')
         self.assertEqual(f['on']['workflow_call']['inputs']['enable-merge']['default'], 'false')
-        self.assertEqual(f['permissions']['contents'], 'write')
+        self.assertEqual(f['permissions']['contents'], 'read')
+        self.assertEqual(f['jobs']['gate']['permissions']['contents'], 'write')
         self.assertNotIn('pull_request_target', f['on'])
 
     def test_production_needs_expected_release_sha(self):
@@ -79,7 +80,8 @@ class ReusableWorkflowContractTests(unittest.TestCase):
 
     def test_preview_deployment_opt_in_and_verified(self):
         f = flow('vercel-preview-deployment.yml')
-        self.assertEqual(f['permissions']['deployments'], 'write')
+        self.assertEqual(f['permissions']['contents'], 'read')
+        self.assertEqual(f['jobs']['verify-preview']['permissions']['deployments'], 'write')
         content = (ROOT / '.github/workflows/vercel-preview-deployment.yml').read_text()
         self.assertIn('vercel[bot]', content)
         self.assertIn('environment: "Preview"', content)

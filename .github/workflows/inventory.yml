@@ -5,6 +5,9 @@ on:
     - cron: '0 5 * * 1'
 permissions:
   contents: read
+concurrency:
+  group: public-policy-inventory
+  cancel-in-progress: true
 jobs:
   audit:
     name: Inventory / read-only
