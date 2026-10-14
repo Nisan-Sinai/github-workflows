@@ -43,6 +43,14 @@ class ReusableWorkflowContractTests(unittest.TestCase):
         for name in ('format-command', 'bundle-security-command', 'deadcode-command', 'source-secret-scan-command'):
             self.assertIn(name, inputs)
 
+    def test_pnpm_uses_the_consumers_working_directory(self):
+        steps = flow('node-ci.yml')['jobs']['verify']['steps']
+        setup = next(step for step in steps if str(step.get('uses', '')).startswith('pnpm/action-setup@'))
+        self.assertEqual(
+            setup['with']['package_json_file'],
+            '${{ inputs.working-directory }}/package.json',
+        )
+
     def test_supabase_requires_real_checks(self):
         inputs = flow('supabase-qa.yml')['on']['workflow_call']['inputs']
         for key in ('schema-drift-command', 'integration-command', 'rls-command'):
