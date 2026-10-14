@@ -76,7 +76,8 @@ def main():
     args = cli.parse_args()
     data = json.loads(Path(args.file).read_text(encoding="utf-8"))
     plan = validate(args.repo, data)
-    print(json.dumps({"mode": "APPLY" if args.apply else "DRY RUN", **plan}, indent=2, ensure_ascii=False))
+    # JSON escapes keep dry-run output safe on non-UTF-8 Windows consoles.
+    print(json.dumps({"mode": "APPLY" if args.apply else "DRY RUN", **plan}, indent=2))
     if not args.apply:
         print("No network calls or changes made; use --apply --confirm <full repo> for an explicitly authorized change.")
         return
