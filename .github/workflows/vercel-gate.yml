@@ -16,10 +16,15 @@ jobs:
   verify:
     name: Deploy / Vercel gate
     # The commit whose PR will merge, NOT a synthetic merge commit.
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Reject non-PR or untrusted fork contexts (never silently skip a required gate)
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+        shell: bash
+        run: |
+          echo '::error::This required Vercel verification must run on a same-repository pull request'
+          exit 1
       - name: Wait for genuine successful Vercel statuses on PR HEAD
         env:
           GH_TOKEN: ${{ github.token }}

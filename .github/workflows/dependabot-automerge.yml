@@ -142,8 +142,16 @@ jobs:
                   elif c=='Vercel' or c.startswith('Vercel – '):
                       if row.get('creator',{}).get('login')!='vercel[bot]' or not (row.get('target_url') or '').startswith('https://vercel.com/'):
                           sys.exit(f'::error::{c}: unverified Vercel status origin')
-              if any(x.get('status')=='completed' and x.get('conclusion') in ('failure','cancelled','timed_out','action_required','stale','startup_failure') for x in cr.values()):
-                  sys.exit('::error::An additional CI check failed; not merging')
+              # All check runs on the exact head must finish, not only the named
+              # mandatory checks: an unknown/new CI gate must never be outrun.
+              for name, run in cr.items():
+                  if run.get('status') != 'completed':
+                      waiting.append(f'Additional check still running: {name}')
+                  elif run.get('conclusion') in (
+                      'failure', 'cancelled', 'timed_out', 'action_required',
+                      'stale', 'startup_failure',
+                  ):
+                      sys.exit(f'::error::Additional CI check failed: {name}')
               if not waiting:
                   # GitHub itself enforces branch rules/reviews/deployments.
                   # sha lease means the exact tested commit is the commit merged.

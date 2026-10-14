@@ -69,15 +69,28 @@ def validate():
             check('workflow_call' not in triggers, f'{path}: hub-only workflow must not be callable')
 
         for jobname, job in data['jobs'].items():
-            check('timeout-minutes' in job, f'{path}:{jobname}: unbounded job timeout')
+            if 'uses' in job:
+                # GitHub Actions does not allow timeout-minutes on reusable
+                # workflow invocation jobs. The called workflow owns the limit.
+                check(job['uses'] in {'./.github/workflows/' + name for name in REUSABLE},
+                      f'{path}:{jobname}: unapproved local workflow invocation')
+                check('steps' not in job and 'timeout-minutes' not in job,
+                      f'{path}:{jobname}: invalid caller job configuration')
+            else:
+                check('timeout-minutes' in job, f'{path}:{jobname}: unbounded job timeout')
             if 'steps' in job:
                 for step in job['steps']:
                     ref = step.get('uses', '')
                     if ref.startswith('actions/checkout@'):
                         check(step.get('with', {}).get('persist-credentials') == 'false',
                               f'{path}: checkout must disable credential persistence')
-                    check(not (ref.endswith('@main') or ref.endswith('@master')),
-                          f'{path}: floating third-party action ref')
+                    # Public shared workflows are infrastructure; unpinned
+                    # third-party actions are a mutable remote execution channel.
+                    if ref and not ref.startswith('./'):
+                        check(bool(re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@'+r'[0-9a-f]{40}', ref)),
+                              f'{path}: action must use an immutable 40-character commit SHA: {ref}')
+                    check(step.get('continue-on-error') != 'true',
+                          f'{path}: silent failure suppression is forbidden')
         if path.name == 'dependabot-automerge.yml':
             check(data['permissions'].get('contents') == 'write', 'Auto-merge needs scoped write')
             check(data['permissions'].get('pull-requests') == 'write', 'Auto-merge needs PR write')

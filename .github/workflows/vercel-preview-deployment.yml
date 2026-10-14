@@ -20,10 +20,15 @@ permissions:
 jobs:
   verify-preview:
     name: Deploy / verified Vercel Preview
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 16
     steps:
+      - name: Reject non-PR or untrusted fork contexts (never silently skip a required gate)
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+        shell: bash
+        run: |
+          echo '::error::This required Vercel verification must run on a same-repository pull request'
+          exit 1
       - name: Validate genuine Vercel result and register Preview deployment
         env:
           GH_TOKEN: ${{ github.token }}

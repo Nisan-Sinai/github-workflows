@@ -1,0 +1,12 @@
+{
+  "name": "github-workflows-node-smoke",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "node --check index.mjs",
+    "typecheck": "node --check index.mjs",
+    "test": "node --test test.mjs",
+    "build": "node --check index.mjs"
+  }
+}
