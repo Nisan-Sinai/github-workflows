@@ -15,11 +15,7 @@ on:
         default: false
         description: 'Explicit opt-in switch: default is dry-run; never merges without true'
 permissions:
-  contents: write
-  pull-requests: write
-  actions: read
-  checks: read
-  statuses: read
+  contents: read
 jobs:
   gate:
     name: Dependabot / safe automerge
@@ -29,6 +25,12 @@ jobs:
       github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+      checks: read
+      statuses: read
     steps:
       - name: Read official Dependabot update metadata
         id: metadata

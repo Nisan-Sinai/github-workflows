@@ -4,6 +4,7 @@
 No GitHub operations. Always inspect package.json/CI first.
 """
 from __future__ import annotations
+
 import argparse
 import json
 import re

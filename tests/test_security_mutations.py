@@ -1,5 +1,5 @@
 """Negative tests proving hub policy fails closed when controls are weakened."""
-import json
+import re
 from pathlib import Path
 import shutil
 import sys
@@ -38,8 +38,12 @@ class WorkflowMutationTests(unittest.TestCase):
         catalog_validator.validate()
 
     def test_floating_checkout_action_is_rejected(self):
-        self.change('guard.yml', 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262',
-                    'actions/checkout@v4')
+        target = self.root / '.github/workflows/guard.yml'
+        before = target.read_text()
+        after, replacements = re.subn(
+            r'actions/checkout@[0-9a-f]{40}', 'actions/checkout@v7', before, count=1)
+        self.assertEqual(replacements, 1)
+        target.write_text(after)
         with self.assertRaisesRegex(ValueError, 'immutable 40-character'):
             catalog_validator.validate()
 

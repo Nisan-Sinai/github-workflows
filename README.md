@@ -11,7 +11,7 @@
 3. **Safe-by-default:** no credentials, repository-admin token, remote code execution via `pull_request_target`, unattended bulk edits, or automatic rule changes.
 4. **Immutable consumers:** use a **full 40-character SHA**, not `@main`, for shared workflows. Upgrade by PR in each consumer.
 5. **Drift monitoring:** public-repository inventory audit reports protection, Dependabot and Actions configuration but **never mutates** settings.
-6. **Public/private separation:** this hub should be **public** if both public and private consumer repositories must call it. Do **not** commit private repository names, secrets, tokens, sensitive inventories, or internal configurations. A private hub **cannot** be called by public repositories. The 2 currently listed private repositories can opt in individually through private PRs.
+6. **Public/private separation:** this hub stays **public** so both public and private consumer repositories can call it. Do **not** commit private repository names, secrets, tokens, sensitive inventories, or internal configurations. Every current or future private repository opts in through its own private PR, pinned to an approved hub commit.
 
 ## Repository map (public only)
 
@@ -89,4 +89,4 @@ jobs:
 - [Future repositories and upgrades](docs/FUTURE.md)
 - [Architecture](docs/ARCHITECTURE.md)
 
-**Status:** a ready-to-publish source repository. Until this folder is pushed to `Nisan-Sinai/github-workflows`, no shared Actions run and nothing changes in existing repositories.
+**Status:** published central workflow hub. A consumer is protected only after its own pinned caller PR is merged and its required checks are configured.
