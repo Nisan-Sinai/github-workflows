@@ -1,0 +1,103 @@
+name: Reusable Supabase migrations, integration and RLS QA
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        type: string
+        default: '24'
+      package-manager:
+        type: string
+        default: pnpm
+      supabase-cli-version:
+        type: string
+        default: '2.101.0'
+      install-command:
+        type: string
+        required: true
+      schema-drift-command:
+        type: string
+        required: true
+      integration-command:
+        type: string
+        required: true
+      rls-command:
+        type: string
+        required: true
+      event-matrix-command:
+        type: string
+        default: ''
+permissions:
+  contents: read
+jobs:
+  integration:
+    name: Database / migrations, integration and RLS
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        if: inputs.package-manager == 'pnpm'
+        with:
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: Require all database quality gates
+        env:
+          INSTALL: ${{ inputs.install-command }}
+          DRIFT: ${{ inputs.schema-drift-command }}
+          INTEGRATION: ${{ inputs.integration-command }}
+          RLS: ${{ inputs.rls-command }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in INSTALL DRIFT INTEGRATION RLS; do
+            [[ -n "${!name}" ]] || { echo "::error::$name must not be blank"; exit 1; }
+          done
+      - name: Install dependencies
+        env:
+          COMMAND: ${{ inputs.install-command }}
+        shell: bash
+        run: bash -euo pipefail -c "$COMMAND"
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: ${{ inputs.supabase-cli-version }}
+      - name: Start fresh Supabase and apply migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f supabase/config.toml ]]; then
+            supabase init
+          fi
+          supabase db start
+          eval "$(supabase status -o env)"
+          [[ -n "${DB_URL:-}" ]] || { echo '::error::local DB_URL missing'; exit 1; }
+          echo "DB_URL=$DB_URL" >> "$GITHUB_ENV"
+          echo "TEST_DATABASE_URL=$DB_URL" >> "$GITHUB_ENV"
+      - name: Migration schema drift
+        env:
+          COMMAND: ${{ inputs.schema-drift-command }}
+        shell: bash
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Database integration tests
+        env:
+          COMMAND: ${{ inputs.integration-command }}
+        shell: bash
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Real RLS contract tests
+        env:
+          COMMAND: ${{ inputs.rls-command }}
+        shell: bash
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Event or tenant isolation matrix
+        if: inputs.event-matrix-command != ''
+        env:
+          COMMAND: ${{ inputs.event-matrix-command }}
+        shell: bash
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Shut down test database
+        if: always()
+        shell: bash
+        run: supabase stop --no-backup

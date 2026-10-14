@@ -1,0 +1,48 @@
+name: Reusable Production Integrity Verification
+on:
+  workflow_call:
+    inputs:
+      production-url:
+        type: string
+        required: true
+      verify-command:
+        type: string
+        required: true
+      expected-sha:
+        type: string
+        required: true
+      node-version:
+        type: string
+        default: '24'
+permissions:
+  contents: read
+jobs:
+  production:
+    name: Production / verify exact release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: Validate release verification inputs
+        env:
+          PRODUCTION_URL: ${{ inputs.production-url }}
+          EXPECTED_SHA: ${{ inputs.expected-sha }}
+          VERIFY_COMMAND: ${{ inputs.verify-command }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$PRODUCTION_URL" == https://* ]] || { echo '::error::Production URL must use HTTPS'; exit 1; }
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-fA-F]{40}$ ]] || { echo '::error::Expected release SHA must be a full Git SHA'; exit 1; }
+          [[ -n "$VERIFY_COMMAND" ]] || { echo '::error::A release-aware verification command is required'; exit 1; }
+      - name: Assert public site serves exact expected release
+        env:
+          PRODUCTION_URL: ${{ inputs.production-url }}
+          EXPECTED_SHA: ${{ inputs.expected-sha }}
+          VERIFY_COMMAND: ${{ inputs.verify-command }}
+        shell: bash
+        run: bash -euo pipefail -c "$VERIFY_COMMAND"

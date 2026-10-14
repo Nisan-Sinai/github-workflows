@@ -1,0 +1,65 @@
+# Example only: review & customize for a consumer repository before committing.
+# Replace the example SHA with a REAL published, reviewed 40-character hub SHA.
+# All executable commands run against the CONSUMER'S checkout and lockfile.
+name: Central high-assurance app QA
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  statuses: read
+jobs:
+  core:
+    uses: Nisan-Sinai/github-workflows/.github/workflows/node-ci.yml@0123456789abcdef0123456789abcdef01234567
+    with:
+      node-version: '24'
+      package-manager: pnpm
+      install-command: pnpm install --frozen-lockfile
+      lint-command: pnpm lint
+      typecheck-command: pnpm typecheck
+      test-command: pnpm test:coverage
+      build-command: pnpm build
+  advanced:
+    uses: Nisan-Sinai/github-workflows/.github/workflows/advanced-node-qa.yml@0123456789abcdef0123456789abcdef01234567
+    with:
+      install-command: pnpm install --frozen-lockfile
+      package-manager: pnpm
+      coverage-command: pnpm test:coverage
+      format-command: pnpm format:check
+      bundle-security-command: pnpm test:security
+      deadcode-command: pnpm deadcode
+      source-secret-scan-command: pnpm scan:secrets
+      build-command: pnpm build
+  security:
+    uses: Nisan-Sinai/github-workflows/.github/workflows/security-ci.yml@0123456789abcdef0123456789abcdef01234567
+    with:
+      ecosystem: node
+      package-manager: pnpm
+      audit-command: pnpm audit --audit-level=low
+  database:
+    uses: Nisan-Sinai/github-workflows/.github/workflows/supabase-qa.yml@0123456789abcdef0123456789abcdef01234567
+    with:
+      package-manager: pnpm
+      install-command: pnpm install --frozen-lockfile
+      schema-drift-command: pnpm check:schema-drift
+      integration-command: pnpm test:integration
+      rls-command: pnpm test:rls
+      event-matrix-command: pnpm test:integration
+  browser:
+    uses: Nisan-Sinai/github-workflows/.github/workflows/browser-qa.yml@0123456789abcdef0123456789abcdef01234567
+    with:
+      package-manager: pnpm
+      install-command: pnpm install --frozen-lockfile
+      browser-install-command: pnpm exec playwright install --with-deps chromium
+      build-command: pnpm build
+      e2e-command: pnpm test:e2e
+      # Lighthouse command must launch the real app, audit routes & enforce budgets.
+      # Add it after setting up the consumer app's runtime and credentials.
+  deployment:
+    uses: Nisan-Sinai/github-workflows/.github/workflows/vercel-gate.yml@0123456789abcdef0123456789abcdef01234567
+    with:
+      contexts-json: '["Vercel"]'
+# Production smoke/dependency-watch schedules and the Preview Deployment
+# registration are separate opt-ins (cannot be triggered for every consumer
+# by this public hub). See docs/ARRIVAL-PARITY.md and docs/ADOPTION.md.
