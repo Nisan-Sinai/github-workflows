@@ -34,7 +34,7 @@ permissions:
 jobs:
   browser:
     name: Browser / Playwright, accessibility and performance
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.timeout-minutes }}
     defaults:
       run:

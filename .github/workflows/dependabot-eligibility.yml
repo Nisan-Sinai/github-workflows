@@ -11,7 +11,7 @@ permissions:
 jobs:
   check:
     name: Dependabot / eligibility
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
       eligible: ${{ steps.classify.outputs.eligible }}
