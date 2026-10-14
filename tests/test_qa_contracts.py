@@ -103,6 +103,7 @@ class ReusableWorkflowContractTests(unittest.TestCase):
     def test_central_manager_is_scheduled_opt_in_and_app_scoped(self):
         f = flow('manager.yml')
         self.assertEqual(set(f['on']), {'schedule', 'workflow_dispatch'})
+        self.assertEqual(f['on']['schedule'], [{'cron': '0,30 3-5 * * 1'}])
         self.assertEqual(f['permissions']['contents'], 'read')
         content = (ROOT / '.github/workflows/manager.yml').read_text()
         self.assertIn('MANAGER_APP_ID', content)
@@ -137,6 +138,10 @@ class ReusableWorkflowContractTests(unittest.TestCase):
         self.assertEqual(global_config['requireConfig'], 'required')
         self.assertNotIn('repositories', global_config)
         policy = json.loads((ROOT / 'default.json').read_text())
+        self.assertEqual(policy['schedule'], ['before 9am on Monday'])
+        self.assertEqual(policy['prConcurrentLimit'], 5)
+        self.assertEqual(policy['branchConcurrentLimit'], 5)
+        self.assertEqual(policy['prHourlyLimit'], 0)
         rules = policy['packageRules']
         automatic = [r for r in rules if r.get('automerge')]
         self.assertTrue(automatic)

@@ -1,7 +1,8 @@
 name: Central repository manager
 on:
   schedule:
-    - cron: '0 5 * * 1'
+    # Six passes let strict, rebased PRs converge during one Monday window.
+    - cron: '0,30 3-5 * * 1'
   workflow_dispatch:
 permissions:
   contents: read

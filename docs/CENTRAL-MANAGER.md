@@ -22,6 +22,18 @@ hub's standard GitHub-hosted runner minutes are free as well.
   auto-merge.
 - Every connected default branch must have a fail-closed ruleset with real
   required check names before auto-merge is enabled.
+- The connected repository must enable GitHub's auto-merge setting. Renovate
+  requests squash auto-merge, while the ruleset remains the authority that
+  blocks merging until every strict required check is green.
+
+## Weekly convergence window
+
+The manager runs six times on Monday at `03:00`, `03:30`, `04:00`, `04:30`,
+`05:00` and `05:30` UTC. That is early Monday morning in Jerusalem and remains
+inside Renovate's `before 9am on Monday` window across daylight-saving changes.
+Repeated passes are intentional: after one strict PR merges, the remaining PRs
+must be rebased and checked again. The five-PR concurrency ceiling plus six
+passes lets the complete batch converge during the same maintenance window.
 
 ## One-time GitHub App setup
 
@@ -44,6 +56,11 @@ environment, save the App id as `MANAGER_APP_ID`, and set
 downloaded key file. Never paste the key in an issue, PR, chat, source file or
 log. The workflow also passes the allowlist to token minting, so even an App
 installed on more repositories cannot grant this job blanket access.
+
+For each connected repository, enable **Allow auto-merge** and automatic branch
+deletion in repository settings. These settings do not weaken branch rules:
+GitHub still refuses the merge until all required checks and the strict
+up-to-date requirement pass.
 
 ## Connect a repository
 

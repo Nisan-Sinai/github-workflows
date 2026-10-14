@@ -26,7 +26,7 @@
 | `.github/workflows/security-ci.yml` | secret scan + optional dependency audit | `.github/workflows/security-shared.yml` |
 | `.github/workflows/guard.yml` | validate the hub itself | automatically on hub PRs |
 | `.github/workflows/inventory.yml` | weekly read-only public policy status | schedule/manual |
-| `.github/workflows/manager.yml` | central dependency/workflow update PRs | Monday/manual |
+| `.github/workflows/manager.yml` | central dependency/workflow update PRs | Monday convergence window/manual |
 
 ## High-assurance QA (including Arrival Confirmations coverage)
 
