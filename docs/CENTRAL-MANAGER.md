@@ -10,8 +10,9 @@ hub's standard GitHub-hosted runner minutes are free as well.
 - The App is installed only on repositories selected by the owner. During the
   pilot it must be installed only on the temporary public test repository.
 - The workflow mints a short-lived installation token. The private key remains
-  in the hub's `MANAGER_PRIVATE_KEY` Actions secret and the App id in
-  `MANAGER_APP_ID`.
+  in the `central-manager` environment's `MANAGER_PRIVATE_KEY` secret, the App
+  id in `MANAGER_APP_ID`, and the comma-separated allowlist in
+  `MANAGER_REPOSITORIES`.
 - A repository is managed only when it contains `renovate.json` extending
   `github>Nisan-Sinai/github-workflows`. Installation alone is not opt-in.
 - The central policy opens update PRs for application dependencies, lockfiles,
@@ -37,9 +38,12 @@ only these repository permissions required by self-hosted Renovate:
 - Workflows: read/write
 
 Install it on the temporary pilot repository only. Generate one private key,
-save it directly as the `MANAGER_PRIVATE_KEY` repository secret, save the App id
-as `MANAGER_APP_ID`, then delete the downloaded key file. Never paste the key in
-an issue, PR, chat, source file or log.
+save it directly as the `MANAGER_PRIVATE_KEY` secret in the `central-manager`
+environment, save the App id as `MANAGER_APP_ID`, and set
+`MANAGER_REPOSITORIES` to the exact pilot repository name. Then delete the
+downloaded key file. Never paste the key in an issue, PR, chat, source file or
+log. The workflow also passes the allowlist to token minting, so even an App
+installed on more repositories cannot grant this job blanket access.
 
 ## Connect a repository
 

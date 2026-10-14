@@ -107,6 +107,8 @@ class ReusableWorkflowContractTests(unittest.TestCase):
         content = (ROOT / '.github/workflows/manager.yml').read_text()
         self.assertIn('MANAGER_APP_ID', content)
         self.assertIn('MANAGER_PRIVATE_KEY', content)
+        self.assertIn('MANAGER_REPOSITORIES', content)
+        self.assertEqual(f['jobs']['renovate']['environment'], 'central-manager')
         self.assertNotIn('personal-access-token', content.lower())
         self.assertNotIn('github-workflows-managed-test', content)
 

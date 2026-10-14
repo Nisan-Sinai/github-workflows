@@ -14,6 +14,7 @@ jobs:
     if: github.repository == 'Nisan-Sinai/github-workflows' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    environment: central-manager
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -25,6 +26,7 @@ jobs:
           app-id: ${{ secrets.MANAGER_APP_ID }}
           private-key: ${{ secrets.MANAGER_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
+          repositories: ${{ secrets.MANAGER_REPOSITORIES }}
       - name: Run pinned central dependency manager
         uses: renovatebot/github-action@f0f41e5f2e706165f6814b1d0f0d0e319de7d1d9 # v46.3.8
         with:
