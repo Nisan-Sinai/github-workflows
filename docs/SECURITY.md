@@ -10,3 +10,12 @@
 - Gitleaks uses its published GitHub Action; check its licensing/availability in private repositories. If a private repository requires a paid license, choose another supported scanner rather than weakening security checks.
 - Run repository access audits after an integration is installed; don't make `GH_TOKEN` public or print authorization headers.
 - The drift inventory intentionally audits only the **public** registry and never writes changes.
+
+## Deep QA controls
+
+- `Hub guard` now runs `actionlint` (fixed release version **and** verified archive SHA-256) on the full `.github/workflows` tree; 20 original policy tests plus simulated GitHub API misuse cases run on every PR.
+- Third-party GitHub Actions are pinned to exact immutable **40-character commit hashes**, not mutable `@v4` tags. The code-level validation rejects new unpinned actions and `continue-on-error: true` in all reusable gates.
+- Dependabot is dry-run by default. Opt-in merging waits for *all* check runs on the precise PR head to finish, including newly added/unlisted checks, and refuses failures. Fake API tests assert that unknown pending checks cannot be outrun.
+- Reusable Vercel gates fail rather than silently produce a skipped/green job when invoked by an unsupported event or an untrusted fork.
+- `main` branch protection is a **separate GitHub administrator operation**: a green guard never implies that rulesets are activated. Check GitHub Settings → Rules before relying on the repo as your CI trust anchor.
+- Actionlint validates workflow syntax; these static tests and simulated API responses are not a substitute for running every reusable workflow against a real consumer PR. Every migration must be opt-in with a pinned hub SHA and its own end-to-end green run.
