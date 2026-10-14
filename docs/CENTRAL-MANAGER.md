@@ -35,6 +35,12 @@ Repeated passes are intentional: after one strict PR merges, the remaining PRs
 must be rebased and checked again. The five-PR concurrency ceiling plus six
 passes lets the complete batch converge during the same maintenance window.
 
+Manual dispatches honor the same schedule by default. For an explicit
+end-to-end verification outside Monday, set the `ignore_schedule` input to
+`true`. That run force-overrides only Renovate's branch-creation schedule; it
+does not bypass required checks, release-age rules, major-update policy or
+repository access controls.
+
 ## One-time GitHub App setup
 
 Create a private GitHub App owned by `Nisan-Sinai`, disable webhooks, and grant

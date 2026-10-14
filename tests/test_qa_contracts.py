@@ -104,11 +104,15 @@ class ReusableWorkflowContractTests(unittest.TestCase):
         f = flow('manager.yml')
         self.assertEqual(set(f['on']), {'schedule', 'workflow_dispatch'})
         self.assertEqual(f['on']['schedule'], [{'cron': '0,30 3-5 * * 1'}])
+        manual = f['on']['workflow_dispatch']['inputs']['ignore_schedule']
+        self.assertEqual(manual['type'], 'boolean')
+        self.assertEqual(manual['default'], 'false')
         self.assertEqual(f['permissions']['contents'], 'read')
         content = (ROOT / '.github/workflows/manager.yml').read_text()
         self.assertIn('MANAGER_CLIENT_ID', content)
         self.assertIn('MANAGER_PRIVATE_KEY', content)
         self.assertIn('MANAGER_REPOSITORIES', content)
+        self.assertIn('RENOVATE_FORCE', content)
         self.assertEqual(f['jobs']['renovate']['environment'], 'central-manager')
         token_permissions = {
             key: value
