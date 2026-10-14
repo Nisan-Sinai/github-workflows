@@ -10,7 +10,7 @@ on:
         default: '8.0.x'
       runner:
         type: string
-        default: ubuntu-latest
+        default: ubuntu-24.04
       run-tests:
         type: boolean
         default: true

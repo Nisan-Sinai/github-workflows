@@ -106,7 +106,7 @@ class ReusableWorkflowContractTests(unittest.TestCase):
         self.assertEqual(f['on']['schedule'], [{'cron': '0,30 3-5 * * 1'}])
         self.assertEqual(f['permissions']['contents'], 'read')
         content = (ROOT / '.github/workflows/manager.yml').read_text()
-        self.assertIn('MANAGER_APP_ID', content)
+        self.assertIn('MANAGER_CLIENT_ID', content)
         self.assertIn('MANAGER_PRIVATE_KEY', content)
         self.assertIn('MANAGER_REPOSITORIES', content)
         self.assertEqual(f['jobs']['renovate']['environment'], 'central-manager')

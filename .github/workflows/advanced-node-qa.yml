@@ -40,7 +40,7 @@ permissions:
 jobs:
   advanced:
     name: Advanced / format, coverage, bundle and code health
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: ${{ inputs.timeout-minutes }}
     defaults:
       run:
