@@ -109,6 +109,24 @@ class ReusableWorkflowContractTests(unittest.TestCase):
         self.assertIn('MANAGER_PRIVATE_KEY', content)
         self.assertIn('MANAGER_REPOSITORIES', content)
         self.assertEqual(f['jobs']['renovate']['environment'], 'central-manager')
+        token_permissions = {
+            key: value
+            for key, value in f['jobs']['renovate']['steps'][1]['with'].items()
+            if key.startswith('permission-')
+        }
+        self.assertEqual(
+            token_permissions,
+            {
+                'permission-checks': 'write',
+                'permission-contents': 'write',
+                'permission-issues': 'write',
+                'permission-metadata': 'read',
+                'permission-pull-requests': 'write',
+                'permission-statuses': 'write',
+                'permission-vulnerability-alerts': 'read',
+                'permission-workflows': 'write',
+            },
+        )
         self.assertNotIn('personal-access-token', content.lower())
         self.assertNotIn('github-workflows-managed-test', content)
 
