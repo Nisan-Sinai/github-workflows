@@ -30,7 +30,7 @@ def workflow(repo: str, sha: str, preset: str) -> str:
     # The caller owns triggering branches and all stack-specific command decisions.
     fields = ["name: Shared CI (opt-in)", "on:", "  pull_request:", "  workflow_dispatch:",
               "permissions:", "  contents: read", "jobs:", "  shared:",
-              f"    uses: Nisan-Sinai/github-workflows/.github/workflows/{entry['workflow']}@{sha.lower()}",
+              f"    uses: Nisan-Sinai/github-workflows/.github/workflows/{entry['workflow']}@{sha.lower()} # main",
               "    with:"]
     for key, value in entry.items():
         if key == "workflow":
@@ -45,12 +45,22 @@ def workflow(repo: str, sha: str, preset: str) -> str:
     return "\n".join(fields) + "\n"
 
 
+def manager_config() -> str:
+    """Opt a consumer into the central manager without embedding inventory."""
+    return json.dumps({
+        "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+        "extends": ["github>Nisan-Sinai/github-workflows"],
+    }, indent=2) + "\n"
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--repo", required=True)
     p.add_argument("--sha", required=True)
     p.add_argument("--preset", default=None)
     p.add_argument("--output", default=None, help="Optional local file; otherwise print only")
+    p.add_argument("--manager-output", default=None,
+                   help="Optional renovate.json path that explicitly connects the repository")
     a = p.parse_args()
     public = json.loads((ROOT / "policies/public-repositories.json").read_text())
     match = next((r for r in public["repositories"] if f"Nisan-Sinai/{r['name']}" == a.repo), None)
@@ -70,6 +80,13 @@ def main() -> None:
         print(f"Created local draft: {path}")
     else:
         print(out, end="")
+    if a.manager_output:
+        manager_path = Path(a.manager_output)
+        if manager_path.exists():
+            p.error(f"Refusing to overwrite {manager_path}")
+        manager_path.parent.mkdir(parents=True, exist_ok=True)
+        manager_path.write_text(manager_config(), encoding="utf-8")
+        print(f"Created central-manager opt-in: {manager_path}")
 
 
 if __name__ == "__main__":

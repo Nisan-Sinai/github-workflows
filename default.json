@@ -1,0 +1,64 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Central update policy for explicitly connected Nisan-Sinai repositories",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    ":semanticCommits",
+    ":dependencyDashboard"
+  ],
+  "timezone": "Asia/Jerusalem",
+  "schedule": ["before 8am on Monday"],
+  "minimumReleaseAge": "7 days",
+  "internalChecksFilter": "strict",
+  "prConcurrentLimit": 5,
+  "branchConcurrentLimit": 5,
+  "rebaseWhen": "behind-base-branch",
+  "platformAutomerge": true,
+  "automergeType": "pr",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 8am on Monday"]
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true
+  },
+  "osvVulnerabilityAlerts": true,
+  "packageRules": [
+    {
+      "description": "Group GitHub Actions and reusable workflow updates",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions and shared workflows"
+    },
+    {
+      "description": "Group Node ecosystem updates",
+      "matchManagers": ["npm", "bun"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
+      "groupName": "Node dependencies"
+    },
+    {
+      "description": "Group Python ecosystem updates",
+      "matchManagers": ["pip_requirements", "poetry", "pep621"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
+      "groupName": "Python dependencies"
+    },
+    {
+      "description": "Group .NET ecosystem updates",
+      "matchManagers": ["nuget"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
+      "groupName": ".NET dependencies"
+    },
+    {
+      "description": "Automatically merge only non-major updates after required repository checks pass",
+      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "Major updates always require manual review",
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    }
+  ]
+}

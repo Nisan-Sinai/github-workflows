@@ -12,7 +12,9 @@ For any new repository, select a preset explicitly and generate a draft caller w
 python scripts/generate_consumer.py \
   --repo Nisan-Sinai/<private-or-new-repository> \
   --sha <approved-40-character-hub-sha> \
-  --preset node-npm
+  --preset node-npm \
+  --output ci-shared.yml \
+  --manager-output renovate.json
 ```
 
 Review the generated commands against that repository before merging. Connecting one repository does not automatically connect future repositories, and updating the hub does not silently update consumers because callers are SHA-pinned. Upgrade each caller by reviewed PR. If cross-repository onboarding is automated later, keep the repository inventory and execution in a private administration repository backed by a narrowly scoped GitHub App and an explicit allowlist.

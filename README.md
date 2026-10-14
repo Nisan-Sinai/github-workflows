@@ -12,6 +12,7 @@
 4. **Immutable consumers:** use a **full 40-character SHA**, not `@main`, for shared workflows. Upgrade by PR in each consumer.
 5. **Drift monitoring:** public-repository inventory audit reports protection, Dependabot and Actions configuration but **never mutates** settings.
 6. **Public/private separation:** this hub stays **public** so both public and private consumer repositories can call it. Do **not** commit private repository names, secrets, tokens, sensitive inventories, or internal configurations. Every current or future private repository opts in through its own private PR, pinned to an approved hub commit.
+7. **Central updates:** a repository-scoped GitHub App plus self-hosted Renovate can centrally open dependency and workflow update PRs for explicitly connected repositories. Patch/minor updates may merge only behind real required checks; major updates remain manual.
 
 ## Repository map (public only)
 
@@ -25,6 +26,7 @@
 | `.github/workflows/security-ci.yml` | secret scan + optional dependency audit | `.github/workflows/security-shared.yml` |
 | `.github/workflows/guard.yml` | validate the hub itself | automatically on hub PRs |
 | `.github/workflows/inventory.yml` | weekly read-only public policy status | schedule/manual |
+| `.github/workflows/manager.yml` | central dependency/workflow update PRs | Monday/manual |
 
 ## High-assurance QA (including Arrival Confirmations coverage)
 
@@ -45,7 +47,7 @@ and GitHub branch protection must explicitly require its checks.
 
 1. Create **public** `Nisan-Sinai/github-workflows` (no organization) using [docs/SETUP.md](docs/SETUP.md).
 2. Verify hub `guard.yml` passes, then record its actual immutable HEAD SHA.
-3. Generate a caller with `python scripts/generate_consumer.py --repo Nisan-Sinai/artzi-energy --sha <40_HEX_SHA>` (prints output, does **not** edit any repo). Change install and test commands to match the individual project's scripts.
+3. Generate a caller and explicit manager opt-in with `python scripts/generate_consumer.py --repo Nisan-Sinai/artzi-energy --sha <40_HEX_SHA> --output ci-shared.yml --manager-output renovate.json` (local files only; it does **not** edit a repository). Change install and test commands to match the individual project's scripts.
 4. Create a PR **in the consumer repo** with the generated `.github/workflows/ci-shared.yml`. Preserve its existing CI/branch protection/Vercel until all new jobs are proven green.
 5. Only then, as a **separate approved change**, consider replacing duplicate jobs. Check the exact required status context names in GitHub; never remove old required checks before their replacements exist.
 6. Repeat as needed. For a future repo, choose a profile from `policies/presets.json`; do not inherit the same test commands across unrelated stacks.
@@ -62,7 +64,7 @@ permissions:
   contents: read
 jobs:
   node:
-    uses: Nisan-Sinai/github-workflows/.github/workflows/node-ci.yml@0123456789abcdef0123456789abcdef01234567 # REPLACE with the actual approved 40-char commit SHA
+    uses: Nisan-Sinai/github-workflows/.github/workflows/node-ci.yml@0123456789abcdef0123456789abcdef01234567 # main; REPLACE the SHA with the actual approved commit
     with:
       package-manager: npm
       install-command: npm ci
@@ -88,5 +90,6 @@ jobs:
 - [Adoption plan for today's repos](docs/ADOPTION.md)
 - [Future repositories and upgrades](docs/FUTURE.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Central repository manager and pilot](docs/CENTRAL-MANAGER.md)
 
 **Status:** published central workflow hub. A consumer is protected only after its own pinned caller PR is merged and its required checks are configured.
