@@ -1,6 +1,8 @@
 import json
 import pathlib
+import subprocess
 import sys
+import tempfile
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -61,6 +63,17 @@ class GovernanceTests(unittest.TestCase):
             create("main", [])
         with self.assertRaises(ValueError):
             create("main", ["CI", "CI"])
+
+    def test_ruleset_cli_writes_utf8_on_windows(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = pathlib.Path(directory) / "ruleset.json"
+            subprocess.run([
+                sys.executable, str(ROOT / "scripts/render_ruleset.py"),
+                "--branch", "main", "--checks", "Vercel – example",
+                "--output", str(output),
+            ], check=True, capture_output=True, text=True)
+            payload = json.loads(output.read_bytes().decode("utf-8"))
+            self.assertEqual(payload["name"], "Protect main – audited checks")
 
 
 if __name__ == "__main__":

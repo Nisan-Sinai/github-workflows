@@ -66,7 +66,7 @@ def main() -> None:
         if path.exists():
             p.error(f"Refusing to overwrite {path}")
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(out)
+        path.write_text(out, encoding="utf-8")
         print(f"Created local draft: {path}")
     else:
         print(out, end="")

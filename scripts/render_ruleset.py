@@ -39,13 +39,15 @@ def main() -> None:
     p.add_argument("--strict", action="store_true", help="Require up-to-date branch")
     p.add_argument("--output", help="Local path, if omitted prints the ruleset")
     args = p.parse_args()
-    value = json.dumps(create(args.branch, args.checks, args.strict), indent=2, ensure_ascii=False) + "\n"
+    # Keep stdout ASCII-safe on Windows consoles while preserving Unicode after
+    # JSON decoding. Files are always UTF-8 so the admin tool can read them.
+    value = json.dumps(create(args.branch, args.checks, args.strict), indent=2) + "\n"
     if args.output:
         path = Path(args.output)
         if path.exists():
             p.error("Will not overwrite an existing ruleset")
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(value)
+        path.write_text(value, encoding="utf-8")
         print(path)
     else:
         print(value, end="")
