@@ -4,6 +4,12 @@ on:
     # Six passes let strict, rebased PRs converge during one Monday window.
     - cron: '0,30 3-5 * * 1'
   workflow_dispatch:
+    inputs:
+      ignore_schedule:
+        description: Allow a manual verification run outside the Monday window
+        required: false
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -44,3 +50,4 @@ jobs:
           token: ${{ steps.manager-token.outputs.token }}
         env:
           LOG_LEVEL: info
+          RENOVATE_FORCE: ${{ inputs.ignore_schedule && '{"schedule":null}' || '' }}
