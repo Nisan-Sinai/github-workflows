@@ -1,0 +1,61 @@
+name: Reusable Full Dependency Advisory Watch
+on:
+  workflow_call:
+    inputs:
+      install-command:
+        type: string
+        required: true
+      audit-command:
+        type: string
+        required: true
+      node-version:
+        type: string
+        default: '24'
+      package-manager:
+        type: string
+        default: 'npm'
+      working-directory:
+        type: string
+        default: '.'
+permissions:
+  contents: read
+jobs:
+  audit:
+    name: Security / strict advisory audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+      - uses: pnpm/action-setup@v4
+        if: inputs.package-manager == 'pnpm'
+        with:
+          run_install: false
+      - uses: oven-sh/setup-bun@v2
+        if: inputs.package-manager == 'bun'
+      - name: Configure Yarn Corepack
+        if: inputs.package-manager == 'yarn'
+        run: corepack enable
+      - name: Require strict dependency audit
+        env:
+          INSTALL: ${{ inputs.install-command }}
+          AUDIT: ${{ inputs.audit-command }}
+        run: |
+          set -euo pipefail
+          [[ -n "$INSTALL" && -n "$AUDIT" ]] || { echo '::error::Locked install and strict audit are required'; exit 1; }
+      - name: Locked install
+        env:
+          COMMAND: ${{ inputs.install-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Audit all declared dependencies
+        env:
+          COMMAND: ${{ inputs.audit-command }}
+        run: bash -euo pipefail -c "$COMMAND"

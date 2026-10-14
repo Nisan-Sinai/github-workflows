@@ -26,6 +26,21 @@
 | `.github/workflows/guard.yml` | validate the hub itself | automatically on hub PRs |
 | `.github/workflows/inventory.yml` | weekly read-only public policy status | schedule/manual |
 
+## High-assurance QA (including Arrival Confirmations coverage)
+
+The hub has **13 opt-in reusable gates** and two hub-only workflows. In addition
+to the language-specific core gates, it defines: advanced formatting/coverage/
+bundle security, Playwright/accessibility/Lighthouse, fresh Supabase migrations/
+integration/RLS, strict scheduled dependency audits, verified Vercel statuses
+and Preview deployment registration, production release verification, and
+review-controlled Dependabot eligibility/auto-merge.
+
+See [the precise Arrival Confirmations parity and limitations matrix](docs/ARRIVAL-PARITY.md)
+and [an example central high-assurance caller](examples/arrival-grade-caller.yml.example).
+**Do not claim the consumer is protected just because these YAML files exist.**
+The caller must pin an actual published SHA, provide tests/credentials, run green,
+and GitHub branch protection must explicitly require its checks.
+
 ## Adoption
 
 1. Create **public** `Nisan-Sinai/github-workflows` (no organization) using [docs/SETUP.md](docs/SETUP.md).

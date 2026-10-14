@@ -1,0 +1,101 @@
+name: Reusable Browser, Accessibility and Lighthouse QA
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        type: string
+        default: '24'
+      package-manager:
+        type: string
+        default: npm
+      working-directory:
+        type: string
+        default: '.'
+      install-command:
+        type: string
+        required: true
+      browser-install-command:
+        type: string
+        required: true
+      build-command:
+        type: string
+        required: true
+      e2e-command:
+        type: string
+        required: true
+      lighthouse-command:
+        type: string
+        default: ''
+      timeout-minutes:
+        type: number
+        default: 45
+permissions:
+  contents: read
+jobs:
+  browser:
+    name: Browser / Playwright, accessibility and performance
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+      - uses: pnpm/action-setup@v4
+        if: inputs.package-manager == 'pnpm'
+        with:
+          run_install: false
+      - uses: oven-sh/setup-bun@v2
+        if: inputs.package-manager == 'bun'
+      - name: Configure Yarn Corepack
+        if: inputs.package-manager == 'yarn'
+        run: corepack enable
+      - name: Require real browser tests
+        env:
+          INSTALL: ${{ inputs.install-command }}
+          BROWSERS: ${{ inputs.browser-install-command }}
+          BUILD: ${{ inputs.build-command }}
+          E2E: ${{ inputs.e2e-command }}
+        run: |
+          set -euo pipefail
+          for name in INSTALL BROWSERS BUILD E2E; do
+            [[ -n "${!name}" ]] || { echo "::error::$name is mandatory"; exit 1; }
+          done
+      - name: Locked install
+        env:
+          COMMAND: ${{ inputs.install-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Browser install
+        env:
+          COMMAND: ${{ inputs.browser-install-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Build for browser tests
+        env:
+          COMMAND: ${{ inputs.build-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Playwright E2E and accessibility
+        env:
+          COMMAND: ${{ inputs.e2e-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Lighthouse budgets
+        if: inputs.lighthouse-command != ''
+        env:
+          COMMAND: ${{ inputs.lighthouse-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Upload browser diagnostic artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-qa-artifacts
+          path: |
+            ${{ inputs.working-directory }}/playwright-report
+            ${{ inputs.working-directory }}/test-results
+            ${{ inputs.working-directory }}/lighthouse-*.json
+          if-no-files-found: ignore
+          retention-days: 7

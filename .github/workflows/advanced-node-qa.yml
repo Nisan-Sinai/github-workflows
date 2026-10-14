@@ -1,0 +1,106 @@
+name: Reusable Advanced Node QA
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        type: string
+        default: '24'
+      package-manager:
+        type: string
+        default: 'npm'
+      working-directory:
+        type: string
+        default: '.'
+      install-command:
+        type: string
+        required: true
+      format-command:
+        type: string
+        default: ''
+      coverage-command:
+        type: string
+        required: true
+      bundle-security-command:
+        type: string
+        default: ''
+      deadcode-command:
+        type: string
+        default: ''
+      source-secret-scan-command:
+        type: string
+        default: ''
+      build-command:
+        type: string
+        required: true
+      timeout-minutes:
+        type: number
+        default: 35
+permissions:
+  contents: read
+jobs:
+  advanced:
+    name: Advanced / format, coverage, bundle and code health
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+      - uses: pnpm/action-setup@v4
+        if: inputs.package-manager == 'pnpm'
+        with:
+          run_install: false
+      - uses: oven-sh/setup-bun@v2
+        if: inputs.package-manager == 'bun'
+      - name: Configure Yarn Corepack
+        if: inputs.package-manager == 'yarn'
+        run: corepack enable
+      - name: Verify required commands
+        env:
+          INSTALL: ${{ inputs.install-command }}
+          COVERAGE: ${{ inputs.coverage-command }}
+          BUILD: ${{ inputs.build-command }}
+        run: |
+          set -euo pipefail
+          for name in INSTALL COVERAGE BUILD; do
+            [[ -n "${!name}" ]] || { echo "::error::$name must not be blank"; exit 1; }
+          done
+      - name: Install with lockfile
+        env:
+          COMMAND: ${{ inputs.install-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Formatting
+        if: inputs.format-command != ''
+        env:
+          COMMAND: ${{ inputs.format-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Coverage thresholds
+        env:
+          COMMAND: ${{ inputs.coverage-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Production build
+        env:
+          COMMAND: ${{ inputs.build-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Browser bundle security
+        if: inputs.bundle-security-command != ''
+        env:
+          COMMAND: ${{ inputs.bundle-security-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Dead code and unused exports
+        if: inputs.deadcode-command != ''
+        env:
+          COMMAND: ${{ inputs.deadcode-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Source and built output secret scan
+        if: inputs.source-secret-scan-command != ''
+        env:
+          COMMAND: ${{ inputs.source-secret-scan-command }}
+        run: bash -euo pipefail -c "$COMMAND"

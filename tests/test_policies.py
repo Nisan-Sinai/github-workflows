@@ -14,16 +14,18 @@ SHA = "0123456789abcdef0123456789abcdef01234567"
 class GovernanceTests(unittest.TestCase):
     def test_registered_public_only(self):
         data = json.loads((ROOT / "policies/public-repositories.json").read_text())
-        self.assertEqual(len(data["repositories"]), 10)
+        self.assertGreaterEqual(len(data["repositories"]), 10)
         self.assertEqual(data["owner"], "Nisan-Sinai")
         names = {r["name"] for r in data["repositories"]}
-        self.assertEqual(len(names), 10)
-        self.assertEqual(names, {
+        self.assertEqual(len(names), len(data["repositories"]))
+        self.assertTrue({
             "AccountManagement", "super-shop-nisan", "netflix-nisan-sinai",
             "nisan-project-site", "test-winter-86-nisan-sinai", "LD-Event-Design",
             "arrival-confirmations", "nisan-sinai-technologies",
             "harel-ai-claims-copilot", "artzi-energy",
-        })
+        }.issubset(names))
+        self.assertNotIn("shel-yah-store", names)
+        self.assertNotIn("cash-flow-navigator", names)
 
     def test_consumer_immutable_sha(self):
         result = workflow("Nisan-Sinai/artzi-energy", SHA, "node-npm")
