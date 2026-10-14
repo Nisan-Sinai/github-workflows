@@ -36,3 +36,23 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Python syntax
         run: python -m compileall -q scripts tests
+  smoke-node:
+    name: Hub / reusable Node smoke
+    uses: ./.github/workflows/node-ci.yml
+    with:
+      node-version: '22'
+      package-manager: npm
+      working-directory: fixtures/node-smoke
+      install-command: npm ci --ignore-scripts
+      lint-command: npm run lint
+      typecheck-command: npm run typecheck
+      test-command: npm test
+      build-command: npm run build
+  smoke-python:
+    name: Hub / reusable Python smoke
+    uses: ./.github/workflows/python-ci.yml
+    with:
+      python-version: '3.12'
+      install-command: python -m pip install 'PyYAML==6.0.3'
+      lint-command: python -m compileall -q scripts tests
+      test-command: python -m unittest discover -s tests -v

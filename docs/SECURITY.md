@@ -19,3 +19,5 @@
 - Reusable Vercel gates fail rather than silently produce a skipped/green job when invoked by an unsupported event or an untrusted fork.
 - `main` branch protection is a **separate GitHub administrator operation**: a green guard never implies that rulesets are activated. Check GitHub Settings → Rules before relying on the repo as your CI trust anchor.
 - Actionlint validates workflow syntax; these static tests and simulated API responses are not a substitute for running every reusable workflow against a real consumer PR. Every migration must be opt-in with a pinned hub SHA and its own end-to-end green run.
+
+- The hub's own PR guard also invokes the **real reusable Node and Python workflows** with harmless self-contained fixtures; this detects job wiring, install, checkout, and test execution issues not visible to YAML-only linting.
