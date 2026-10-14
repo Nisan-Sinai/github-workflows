@@ -1,0 +1,27 @@
+name: Hub guard
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate:
+    name: Hub / validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: YAML parser
+        run: python -m pip install 'PyYAML==6.0.3'
+      - name: Validate catalog and workflows
+        run: python scripts/validate.py
+      - name: Tests
+        run: python -m unittest discover -s tests -v
+      - name: Python syntax
+        run: python -m compileall -q scripts tests

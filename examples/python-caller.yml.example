@@ -1,0 +1,14 @@
+name: Shared Python CI
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  python:
+    uses: Nisan-Sinai/github-workflows/.github/workflows/python-ci.yml@REPLACE_WITH_REAL_40_CHAR_COMMIT_SHA
+    with:
+      python-version: '3.12'
+      install-command: "python -m pip install -e '.[dev]'"
+      lint-command: ruff check .
+      test-command: python -m pytest -q

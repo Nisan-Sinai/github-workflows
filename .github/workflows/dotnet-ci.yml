@@ -1,0 +1,43 @@
+name: Reusable .NET CI
+on:
+  workflow_call:
+    inputs:
+      project:
+        type: string
+        required: true
+      dotnet-version:
+        type: string
+        default: '8.0.x'
+      runner:
+        type: string
+        default: ubuntu-latest
+      run-tests:
+        type: boolean
+        default: true
+permissions:
+  contents: read
+jobs:
+  verify:
+    name: .NET / verify
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ inputs.dotnet-version }}
+      - name: Restore
+        env:
+          PROJECT: ${{ inputs.project }}
+        run: dotnet restore "$PROJECT"
+      - name: Build
+        env:
+          PROJECT: ${{ inputs.project }}
+        run: dotnet build "$PROJECT" --configuration Release --no-restore
+      - name: Tests
+        if: inputs.run-tests
+        env:
+          PROJECT: ${{ inputs.project }}
+        run: dotnet test "$PROJECT" --configuration Release --no-build

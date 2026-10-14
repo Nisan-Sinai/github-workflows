@@ -1,0 +1,73 @@
+name: Reusable Vercel status gate
+on:
+  workflow_call:
+    inputs:
+      contexts-json:
+        description: 'JSON array of exact Vercel commit status context names (e.g. ["Vercel"])'
+        type: string
+        required: true
+      timeout-seconds:
+        type: number
+        default: 900
+permissions:
+  contents: read
+  statuses: read
+jobs:
+  verify:
+    name: Deploy / Vercel gate
+    # The commit whose PR will merge, NOT a synthetic merge commit.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Wait for genuine successful Vercel statuses on PR HEAD
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CONTEXTS: ${{ inputs.contexts-json }}
+          TIMEOUT_SECONDS: ${{ inputs.timeout-seconds }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, subprocess, sys, time
+          contexts = json.loads(os.environ['CONTEXTS'])
+          if not isinstance(contexts, list) or not contexts or len(set(contexts)) != len(contexts) or not all(isinstance(c, str) and c.strip() for c in contexts):
+              sys.exit('::error::contexts-json must be a nonempty JSON array of unique status names')
+          if not all(c == 'Vercel' or c.startswith('Vercel – ') for c in contexts):
+              sys.exit('::error::Only known Vercel contexts are accepted')
+          target = os.environ['HEAD_SHA']
+          if len(target) != 40 or not all(c in '0123456789abcdef' for c in target.lower()):
+              sys.exit('::error::PR HEAD SHA is missing or invalid')
+          max_sec = min(1080, max(30, int(os.environ['TIMEOUT_SECONDS'])))
+          until = time.monotonic() + max_sec
+          while time.monotonic() < until:
+              raw = subprocess.check_output(['gh','api',f"repos/{os.environ['REPOSITORY']}/commits/{target}/statuses?per_page=100"], text=True)
+              statuses = json.loads(raw)
+              latest = {}
+              # GitHub's /statuses endpoint returns most recent first.
+              for s in statuses:
+                  latest.setdefault(s.get('context'), s)
+              waiting = []
+              for ctx in contexts:
+                  status = latest.get(ctx)
+                  if not status:
+                      waiting.append(ctx + ':missing')
+                      continue
+                  creator = (status.get('creator') or {}).get('login')
+                  link = status.get('target_url') or ''
+                  state = status.get('state')
+                  if creator != 'vercel[bot]' or not link.startswith('https://vercel.com/'):
+                      sys.exit(f'::error::{ctx}: source is not verified Vercel')
+                  if state in ('failure','error'):
+                      sys.exit(f'::error::{ctx}: Vercel deployment failed')
+                  if state != 'success':
+                      waiting.append(ctx + ':' + str(state))
+              if not waiting:
+                  print('All verified Vercel statuses succeeded for PR HEAD', target)
+                  sys.exit(0)
+              print('Waiting for:', ', '.join(waiting), flush=True)
+              time.sleep(12)
+          sys.exit('::error::Timed out waiting for mandatory Vercel deployments')
+          PY

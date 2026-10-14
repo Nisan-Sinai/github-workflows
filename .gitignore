@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*_token*
+private-*.json
+*.private.json
+.private/
+__pycache__/
+.pytest_cache/
+.coverage
+node_modules/
+.DS_Store

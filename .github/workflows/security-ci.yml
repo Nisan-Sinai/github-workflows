@@ -1,0 +1,76 @@
+name: Reusable Security CI
+on:
+  workflow_call:
+    inputs:
+      ecosystem:
+        type: string
+        default: 'none'
+      package-manager:
+        type: string
+        default: npm
+      working-directory:
+        type: string
+        default: '.'
+      audit-command:
+        type: string
+        default: ''
+permissions:
+  contents: read
+jobs:
+  secrets:
+    name: Security / secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  dependencies:
+    name: Security / dependency audit
+    if: inputs.ecosystem != 'none'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        if: inputs.ecosystem == 'node'
+        with:
+          node-version: '22'
+      - uses: pnpm/action-setup@v4
+        if: inputs.ecosystem == 'node' && inputs.package-manager == 'pnpm'
+        with:
+          run_install: false
+      - uses: actions/setup-python@v5
+        if: inputs.ecosystem == 'python'
+        with:
+          python-version: '3.12'
+      - name: Dependency audit
+        env:
+          ECOSYSTEM: ${{ inputs.ecosystem }}
+          PM: ${{ inputs.package-manager }}
+          COMMAND: ${{ inputs.audit-command }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$COMMAND" ]]; then
+            bash -euo pipefail -c "$COMMAND"
+          elif [[ "$ECOSYSTEM" == 'node' && "$PM" == 'npm' ]]; then
+            npm audit --omit=dev --audit-level=high
+          elif [[ "$ECOSYSTEM" == 'node' && "$PM" == 'pnpm' ]]; then
+            pnpm audit --prod --audit-level=high
+          elif [[ "$ECOSYSTEM" == 'python' ]]; then
+            python -m pip install pip-audit
+            python -m pip_audit
+          else
+            echo '::error::Unsupported ecosystem / package manager without explicit audit-command.'
+            exit 1
+          fi

@@ -1,0 +1,21 @@
+# WARNING: introduce ONLY after verifying no other auto-merge runs in this repo.
+# This example stays DRY RUN. Do NOT enable writes until the exact gate contexts
+# are verified on a real Dependabot PR and branch protection is active.
+name: Shared Dependabot safe auto-merge
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+  checks: read
+  statuses: read
+jobs:
+  safely-merge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    uses: Nisan-Sinai/github-workflows/.github/workflows/dependabot-automerge.yml@REPLACE_WITH_REAL_40_CHAR_COMMIT_SHA
+    with:
+      required-checks-json: '["CHANGE_ME_REAL_CI_JOB_NAME"]'
+      required-statuses-json: '["Vercel"]'
+      enable-merge: false  # explicit manual approval to change true in future PR

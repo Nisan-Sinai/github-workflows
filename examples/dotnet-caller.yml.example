@@ -1,0 +1,14 @@
+name: Shared .NET CI
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dotnet:
+    uses: Nisan-Sinai/github-workflows/.github/workflows/dotnet-ci.yml@REPLACE_WITH_REAL_40_CHAR_COMMIT_SHA
+    with:
+      dotnet-version: '8.0.x'
+      runner: windows-latest
+      project: YourActualSolution.sln
+      run-tests: true

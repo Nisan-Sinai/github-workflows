@@ -1,0 +1,96 @@
+name: Reusable Node CI
+on:
+  workflow_call:
+    inputs:
+      package-manager:
+        type: string
+        default: npm
+      node-version:
+        type: string
+        default: '22'
+      working-directory:
+        type: string
+        default: '.'
+      install-command:
+        type: string
+        required: true
+      lint-command:
+        type: string
+        default: ''
+      typecheck-command:
+        type: string
+        default: ''
+      test-command:
+        type: string
+        default: ''
+      build-command:
+        type: string
+        default: ''
+      timeout-minutes:
+        type: number
+        default: 40
+permissions:
+  contents: read
+jobs:
+  verify:
+    name: Node / verify
+    runs-on: ubuntu-latest
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+      - uses: pnpm/action-setup@v4
+        if: inputs.package-manager == 'pnpm'
+        with:
+          run_install: false
+      - uses: oven-sh/setup-bun@v2
+        if: inputs.package-manager == 'bun'
+      - name: Configure Yarn Corepack
+        if: inputs.package-manager == 'yarn'
+        run: corepack enable
+      - name: Validate caller commands
+        env:
+          INSTALL: ${{ inputs.install-command }}
+          LINT: ${{ inputs.lint-command }}
+          TYPECHECK: ${{ inputs.typecheck-command }}
+          TEST: ${{ inputs.test-command }}
+          BUILD: ${{ inputs.build-command }}
+        run: |
+          set -euo pipefail
+          test -n "$INSTALL" || { echo '::error::install-command is required'; exit 1; }
+          if [[ -z "$LINT" && -z "$TYPECHECK" && -z "$TEST" && -z "$BUILD" ]]; then
+            echo '::error::At least one verification command is required.'
+            exit 1
+          fi
+      - name: Install locked dependencies
+        env:
+          COMMAND: ${{ inputs.install-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Lint
+        if: inputs.lint-command != ''
+        env:
+          COMMAND: ${{ inputs.lint-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Typecheck
+        if: inputs.typecheck-command != ''
+        env:
+          COMMAND: ${{ inputs.typecheck-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Unit tests
+        if: inputs.test-command != ''
+        env:
+          COMMAND: ${{ inputs.test-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Build
+        if: inputs.build-command != ''
+        env:
+          COMMAND: ${{ inputs.build-command }}
+        run: bash -euo pipefail -c "$COMMAND"

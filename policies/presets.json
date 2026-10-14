@@ -1,0 +1,70 @@
+{
+  "node-npm": {
+    "workflow": "node-ci.yml",
+    "package-manager": "npm",
+    "install-command": "npm ci",
+    "lint-command": "npm run lint",
+    "typecheck-command": "npm run type-check",
+    "test-command": "npm run test",
+    "build-command": "npm run build"
+  },
+  "node-pnpm": {
+    "workflow": "node-ci.yml",
+    "package-manager": "pnpm",
+    "install-command": "pnpm install --frozen-lockfile",
+    "lint-command": "pnpm run lint",
+    "typecheck-command": "pnpm run typecheck",
+    "test-command": "pnpm run test",
+    "build-command": "pnpm run build"
+  },
+  "node-bun": {
+    "workflow": "node-ci.yml",
+    "package-manager": "bun",
+    "install-command": "bun install --frozen-lockfile",
+    "lint-command": "bun run lint",
+    "typecheck-command": "bun run typecheck",
+    "test-command": "bun run test",
+    "build-command": "bun run build"
+  },
+  "node-yarn": {
+    "workflow": "node-ci.yml",
+    "package-manager": "yarn",
+    "install-command": "yarn install --immutable",
+    "lint-command": "yarn lint",
+    "typecheck-command": "yarn typecheck",
+    "test-command": "yarn test",
+    "build-command": "yarn build"
+  },
+  "node-legacy": {
+    "workflow": "node-ci.yml",
+    "package-manager": "npm",
+    "install-command": "npm ci",
+    "lint-command": "",
+    "typecheck-command": "",
+    "test-command": "npm test -- --runInBand",
+    "build-command": "npm run build"
+  },
+  "python": {
+    "workflow": "python-ci.yml",
+    "python-version": "3.12",
+    "install-command": "python -m pip install -e '.[dev]'",
+    "lint-command": "ruff check . && ruff format --check .",
+    "typecheck-command": "",
+    "test-command": "python -m pytest -q",
+    "build-command": "python -m build"
+  },
+  "dotnet": {
+    "workflow": "dotnet-ci.yml",
+    "dotnet-version": "8.0.x",
+    "project": "YourSolution.sln",
+    "runner": "ubuntu-latest",
+    "run-tests": true
+  },
+  "dotnet-legacy": {
+    "workflow": "dotnet-ci.yml",
+    "dotnet-version": "8.0.x",
+    "project": "AccountManagement.sln",
+    "runner": "windows-latest",
+    "run-tests": false
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "owner": "Nisan-Sinai",
+  "as_of": "2026-10-14",
+  "purpose": "Public-only, opt-in adoption registry; contains no private repository names",
+  "repositories": [
+    {"name": "AccountManagement", "branch": "master", "profile": "dotnet-legacy", "adoption": "assess"},
+    {"name": "super-shop-nisan", "branch": "main", "profile": "node-legacy", "adoption": "assess"},
+    {"name": "netflix-nisan-sinai", "branch": "main", "profile": "node-legacy", "adoption": "assess"},
+    {"name": "nisan-project-site", "branch": "master", "profile": "node-legacy", "adoption": "assess"},
+    {"name": "test-winter-86-nisan-sinai", "branch": "main", "profile": "node-legacy", "adoption": "assess"},
+    {"name": "LD-Event-Design", "branch": "main", "profile": "node-npm", "adoption": "preserve-existing-ci"},
+    {"name": "arrival-confirmations", "branch": "main", "profile": "node-pnpm", "adoption": "preserve-existing-ci"},
+    {"name": "nisan-sinai-technologies", "branch": "main", "profile": "node-npm", "adoption": "preserve-existing-ci"},
+    {"name": "harel-ai-claims-copilot", "branch": "main", "profile": "node-npm", "adoption": "assess"},
+    {"name": "artzi-energy", "branch": "main", "profile": "node-npm", "adoption": "preserve-existing-ci"}
+  ]
+}

@@ -1,0 +1,14 @@
+# Optional extra Vercel check. Match the exact consumer status context names.
+# Do not require it as a protected check until its first green run succeeds.
+name: Shared Vercel gate
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+  statuses: read
+jobs:
+  previews:
+    uses: Nisan-Sinai/github-workflows/.github/workflows/vercel-gate.yml@REPLACE_WITH_REAL_40_CHAR_COMMIT_SHA
+    with:
+      contexts-json: '["Vercel"]'

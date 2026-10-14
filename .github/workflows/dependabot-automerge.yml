@@ -1,0 +1,158 @@
+name: Reusable Dependabot Safe Auto-Merge
+on:
+  workflow_call:
+    inputs:
+      required-checks-json:
+        type: string
+        required: true
+        description: 'JSON array of EXACT mandatory CI check run names'
+      required-statuses-json:
+        type: string
+        default: '[]'
+        description: 'JSON array of EXACT deployment commit status contexts, e.g. ["Vercel"]'
+      enable-merge:
+        type: boolean
+        default: false
+        description: 'Explicit opt-in switch: default is dry-run; never merges without true'
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+  checks: read
+  statuses: read
+jobs:
+  gate:
+    name: Dependabot / safe automerge
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Read official Dependabot update metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+      - name: Enforce eligible update type and exact CI/Vercel gates
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_API_URL: ${{ github.api_url }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+          REQUIRED_CHECKS: ${{ inputs.required-checks-json }}
+          REQUIRED_STATUSES: ${{ inputs.required-statuses-json }}
+          ENABLE_MERGE: ${{ inputs.enable-merge }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, sys, time, urllib.request, urllib.error
+          repo = os.environ['REPOSITORY']
+          number = int(os.environ['PR_NUMBER'])
+          sha = os.environ['PR_SHA']
+          kind = os.environ['UPDATE_TYPE']
+          if kind not in ('version-update:semver-patch','version-update:semver-minor'):
+              print('Major/unknown Dependabot update: manual review required')
+              sys.exit(0)
+          checks = json.loads(os.environ['REQUIRED_CHECKS'])
+          statuses = json.loads(os.environ['REQUIRED_STATUSES'])
+          for label, entries in [('checks',checks),('statuses',statuses)]:
+              if not isinstance(entries, list) or len(set(entries)) != len(entries) or not all(isinstance(x,str) and x for x in entries):
+                  sys.exit('::error::Invalid or duplicate ' + label)
+          if not checks:
+              sys.exit('::error::Cannot auto-merge without mandatory CI check names')
+          if os.environ['ENABLE_MERGE'].lower() != 'true':
+              print('DRY RUN: eligible update type, but enable-merge is false. No changes made.')
+              sys.exit(0)
+          api = os.environ['GITHUB_API_URL']
+          token = os.environ['GH_TOKEN']
+          def request(path, method='GET', payload=None):
+              raw = None if payload is None else json.dumps(payload).encode('utf-8')
+              q = urllib.request.Request(f'{api}/repos/{repo}/{path}',data=raw,method=method,headers={
+                  'Accept':'application/vnd.github+json',
+                  'Authorization':f'Bearer {token}',
+                  'X-GitHub-Api-Version':'2022-11-28',
+                  **({'Content-Type':'application/json'} if payload is not None else {})})
+              try:
+                  with urllib.request.urlopen(q,timeout=20) as rsp:
+                      return json.load(rsp)
+              except urllib.error.HTTPError as e:
+                  raise RuntimeError(f'GitHub refused {method} {path} (HTTP {e.code}); do not bypass the rule') from e
+          def latest_checks():
+              rows=[]
+              page=1
+              while True:
+                  response=request(f'commits/{sha}/check-runs?per_page=100&page={page}')
+                  batch=response.get('check_runs',[])
+                  rows.extend(batch)
+                  if len(batch)<100:
+                      break
+                  page+=1
+              result={}
+              for row in rows:
+                  name=row.get('name')
+                  if name=='Dependabot / safe automerge':
+                      continue
+                  if name not in result or row.get('id',0)>result[name].get('id',0):
+                      result[name]=row
+              return result
+          def latest_statuses():
+              rows=[]
+              page=1
+              while True:
+                  batch=request(f'commits/{sha}/statuses?per_page=100&page={page}')
+                  rows.extend(batch)
+                  if len(batch)<100:
+                      break
+                  page+=1
+              # GitHub returns commit statuses newest-first.
+              result={}
+              for s in rows:
+                  result.setdefault(s.get('context'),s)
+              return result
+          for attempt in range(90):
+              pr=request(f'pulls/{number}')
+              project=request('')
+              if pr.get('state')!='open' or pr.get('draft') or pr.get('user',{}).get('login')!='dependabot[bot]':
+                  sys.exit('::error::PR is not an open, trusted Dependabot PR')
+              if pr['head']['sha']!=sha or pr['base']['ref']!=project['default_branch']:
+                  sys.exit('::error::PR changed head or base; requiring fresh run')
+              if pr.get('mergeable') is False or pr.get('mergeable_state')=='dirty':
+                  sys.exit('::error::PR has a merge conflict')
+              comparison=request(f'compare/{project["default_branch"]}...{sha}')
+              if comparison.get('behind_by',0)!=0:
+                  sys.exit('::error::PR is behind its base branch; ask Dependabot to rebase')
+              cr=latest_checks()
+              st=latest_statuses()
+              waiting=[]
+              for c in checks:
+                  run=cr.get(c)
+                  if not run or run.get('status')!='completed':
+                      waiting.append(c)
+                  elif run.get('conclusion')!='success':
+                      sys.exit(f'::error::Required check {c} failed: {run.get("conclusion")}')
+              for c in statuses:
+                  row=st.get(c)
+                  if not row or row.get('state')=='pending':
+                      waiting.append(c)
+                  elif row.get('state')!='success':
+                      sys.exit(f'::error::Required deployment {c} failed')
+                  elif c=='Vercel' or c.startswith('Vercel – '):
+                      if row.get('creator',{}).get('login')!='vercel[bot]' or not (row.get('target_url') or '').startswith('https://vercel.com/'):
+                          sys.exit(f'::error::{c}: unverified Vercel status origin')
+              if any(x.get('status')=='completed' and x.get('conclusion') in ('failure','cancelled','timed_out','action_required','stale','startup_failure') for x in cr.values()):
+                  sys.exit('::error::An additional CI check failed; not merging')
+              if not waiting:
+                  # GitHub itself enforces branch rules/reviews/deployments.
+                  # sha lease means the exact tested commit is the commit merged.
+                  merged=request(f'pulls/{number}/merge','PUT',{'sha':sha,'merge_method':'squash'})
+                  if not merged.get('merged'):
+                      sys.exit('::error::GitHub did not confirm the merge')
+                  print('Squash merged Dependabot PR at validated HEAD SHA',sha)
+                  sys.exit(0)
+              print('Waiting for exact mandatory gates:',waiting,flush=True)
+              time.sleep(20)
+          sys.exit('::error::Timed out; PR remains open')
+          PY

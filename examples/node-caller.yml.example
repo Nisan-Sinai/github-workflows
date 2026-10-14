@@ -1,0 +1,18 @@
+# Review and tailor this file before opening a PR in the consuming repository.
+# Replace the placeholder SHA with a real immutable SHA from the published hub.
+name: Shared Node CI
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  node:
+    uses: Nisan-Sinai/github-workflows/.github/workflows/node-ci.yml@REPLACE_WITH_REAL_40_CHAR_COMMIT_SHA
+    with:
+      package-manager: npm
+      install-command: npm ci
+      lint-command: npm run lint
+      typecheck-command: npm run type-check
+      test-command: npm run test
+      build-command: npm run build

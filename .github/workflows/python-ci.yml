@@ -1,0 +1,70 @@
+name: Reusable Python CI
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        type: string
+        default: '3.12'
+      working-directory:
+        type: string
+        default: '.'
+      install-command:
+        type: string
+        required: true
+      lint-command:
+        type: string
+        default: ''
+      typecheck-command:
+        type: string
+        default: ''
+      test-command:
+        type: string
+        default: 'python -m pytest -q'
+      build-command:
+        type: string
+        default: ''
+permissions:
+  contents: read
+jobs:
+  verify:
+    name: Python / verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+      - name: Install
+        env:
+          COMMAND: ${{ inputs.install-command }}
+        run: |
+          set -euo pipefail
+          test -n "$COMMAND" || { echo '::error::install-command required'; exit 1; }
+          bash -euo pipefail -c "$COMMAND"
+      - name: Lint
+        if: inputs.lint-command != ''
+        env:
+          COMMAND: ${{ inputs.lint-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Typecheck
+        if: inputs.typecheck-command != ''
+        env:
+          COMMAND: ${{ inputs.typecheck-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Test
+        if: inputs.test-command != ''
+        env:
+          COMMAND: ${{ inputs.test-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Build
+        if: inputs.build-command != ''
+        env:
+          COMMAND: ${{ inputs.build-command }}
+        run: bash -euo pipefail -c "$COMMAND"
