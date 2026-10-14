@@ -19,7 +19,7 @@ REUSABLE = {
     'advanced-node-qa.yml', 'browser-qa.yml', 'supabase-qa.yml',
     'production-qa.yml', 'dependency-watch.yml',
 }
-RUNNERS = {'guard.yml', 'inventory.yml'}
+RUNNERS = {'guard.yml', 'inventory.yml', 'manager.yml'}
 ALLOWED_EVENTS = {'workflow_call', 'pull_request', 'push', 'schedule', 'workflow_dispatch'}
 
 
@@ -39,6 +39,8 @@ def check(condition, message):
 def validate():
     index = json.loads((ROOT / 'policies/public-repositories.json').read_text(encoding='utf-8'))
     presets = json.loads((ROOT / 'policies/presets.json').read_text(encoding='utf-8'))
+    manager = json.loads((ROOT / 'renovate/global.json').read_text(encoding='utf-8'))
+    central_policy = json.loads((ROOT / 'default.json').read_text(encoding='utf-8'))
     check(index.get('owner') == 'Nisan-Sinai', 'Public catalog must only target the personal account')
     repos = index.get('repositories')
     check(isinstance(repos, list) and repos, 'Public catalog must be nonempty')
@@ -49,6 +51,19 @@ def validate():
         check(row['profile'] in presets, f'Unknown stack profile for {row["name"]}')
         check(row['adoption'] in {'assess', 'preserve-existing-ci', 'opt-in'}, 'Invalid adoption strategy')
         check(not any(k in row for k in ('private', 'secrets', 'token')), 'Private data in public catalog')
+
+    check(manager.get('platform') == 'github', 'Manager must target GitHub')
+    check(manager.get('autodiscover') is True, 'Manager must discover App-installed repositories')
+    check(manager.get('onboarding') is False, 'Manager must never silently onboard repositories')
+    check(manager.get('requireConfig') == 'required', 'Every managed repository must explicitly opt in')
+    check('repositories' not in manager, 'Public manager config must not contain repository inventory')
+    rules = central_policy.get('packageRules')
+    check(isinstance(rules, list) and rules, 'Central update policy needs package rules')
+    major = [r for r in rules if 'major' in r.get('matchUpdateTypes', [])]
+    check(major and all(r.get('automerge') is False for r in major), 'Major updates must never auto-merge')
+    automatic = [r for r in rules if r.get('automerge') is True]
+    check(automatic and all('major' not in r.get('matchUpdateTypes', []) for r in automatic),
+          'Automatic updates must exclude major versions')
 
     paths = list(WORKFLOWS.glob('*.yml'))
     discovered = {p.name for p in paths}

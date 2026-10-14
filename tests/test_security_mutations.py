@@ -21,6 +21,8 @@ class WorkflowMutationTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         shutil.copytree(ROOT / '.github/workflows', self.root / '.github/workflows')
         shutil.copytree(ROOT / 'policies', self.root / 'policies')
+        shutil.copytree(ROOT / 'renovate', self.root / 'renovate')
+        shutil.copy2(ROOT / 'default.json', self.root / 'default.json')
         self.mock_root = patch.object(catalog_validator, 'ROOT', self.root)
         self.mock_workflows = patch.object(catalog_validator, 'WORKFLOWS', self.root / '.github/workflows')
         self.mock_root.start()

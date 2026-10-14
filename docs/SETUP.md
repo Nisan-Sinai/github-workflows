@@ -21,10 +21,11 @@
 
    ```bash
    SHA=$(git rev-parse HEAD)
-   python scripts/generate_consumer.py --repo Nisan-Sinai/artzi-energy --sha "$SHA" --preset node-npm
+   python scripts/generate_consumer.py --repo Nisan-Sinai/artzi-energy --sha "$SHA" --preset node-npm \
+     --output ci-shared.yml --manager-output renovate.json
    ```
 
-   Review the generated YAML; tailor commands to match the consumer's `package.json`. Add it by PR to the consumer as `.github/workflows/ci-shared.yml`. This repository DOES NOT auto-install itself in any consumer.
+   Review the generated YAML; tailor commands to match the consumer's `package.json`. Add it by PR to the consumer as `.github/workflows/ci-shared.yml`, and add `renovate.json` only after installing the manager App on that repository and protecting its default branch. This repository DOES NOT auto-install itself in any consumer.
 7. To protect branches: generate a ruleset from **real check context names** and import it as a separate approved admin action. Follow [Branch protection](BRANCH-PROTECTION.md).
 
 ## Work mode option

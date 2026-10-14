@@ -100,6 +100,51 @@ class ReusableWorkflowContractTests(unittest.TestCase):
         self.assertIn('schedule', f['on'])
         self.assertNotIn('pull_request_target', f['on'])
 
+    def test_central_manager_is_scheduled_opt_in_and_app_scoped(self):
+        f = flow('manager.yml')
+        self.assertEqual(set(f['on']), {'schedule', 'workflow_dispatch'})
+        self.assertEqual(f['permissions']['contents'], 'read')
+        content = (ROOT / '.github/workflows/manager.yml').read_text()
+        self.assertIn('MANAGER_APP_ID', content)
+        self.assertIn('MANAGER_PRIVATE_KEY', content)
+        self.assertIn('MANAGER_REPOSITORIES', content)
+        self.assertEqual(f['jobs']['renovate']['environment'], 'central-manager')
+        token_permissions = {
+            key: value
+            for key, value in f['jobs']['renovate']['steps'][1]['with'].items()
+            if key.startswith('permission-')
+        }
+        self.assertEqual(
+            token_permissions,
+            {
+                'permission-checks': 'write',
+                'permission-contents': 'write',
+                'permission-issues': 'write',
+                'permission-metadata': 'read',
+                'permission-pull-requests': 'write',
+                'permission-statuses': 'write',
+                'permission-vulnerability-alerts': 'read',
+                'permission-workflows': 'write',
+            },
+        )
+        self.assertNotIn('personal-access-token', content.lower())
+        self.assertNotIn('github-workflows-managed-test', content)
+
+    def test_central_update_policy_is_fail_closed_for_major_versions(self):
+        global_config = json.loads((ROOT / 'renovate/global.json').read_text())
+        self.assertTrue(global_config['autodiscover'])
+        self.assertFalse(global_config['onboarding'])
+        self.assertEqual(global_config['requireConfig'], 'required')
+        self.assertNotIn('repositories', global_config)
+        policy = json.loads((ROOT / 'default.json').read_text())
+        rules = policy['packageRules']
+        automatic = [r for r in rules if r.get('automerge')]
+        self.assertTrue(automatic)
+        self.assertTrue(all('major' not in r['matchUpdateTypes'] for r in automatic))
+        major = [r for r in rules if 'major' in r.get('matchUpdateTypes', [])]
+        self.assertTrue(major)
+        self.assertTrue(all(r.get('automerge') is False for r in major))
+
     def test_no_workflow_checkout_tokens(self):
         for path in (ROOT / '.github/workflows').glob('*.yml'):
             with self.subTest(path=path.name):

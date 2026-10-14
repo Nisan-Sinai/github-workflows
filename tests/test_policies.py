@@ -7,7 +7,7 @@ import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from generate_consumer import workflow
+from generate_consumer import manager_config, workflow
 from render_ruleset import create
 
 SHA = "0123456789abcdef0123456789abcdef01234567"
@@ -34,8 +34,14 @@ class GovernanceTests(unittest.TestCase):
         self.assertIn(f"node-ci.yml@{SHA}", result)
         self.assertIn("pull_request:", result)
         self.assertNotIn("@main", result)
+        self.assertIn(f"@{SHA} # main", result)
         with self.assertRaises(ValueError):
             workflow("Nisan-Sinai/artzi-energy", "main", "node-npm")
+
+    def test_consumer_central_manager_opt_in_contains_no_inventory(self):
+        result = json.loads(manager_config())
+        self.assertEqual(result['extends'], ['github>Nisan-Sinai/github-workflows'])
+        self.assertNotIn('repositories', result)
 
     def test_consumer_for_dotnet(self):
         result = workflow("Nisan-Sinai/AccountManagement", SHA, "dotnet-legacy")
