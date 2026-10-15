@@ -38,6 +38,12 @@
       "groupName": "Node dependencies"
     },
     {
+      "description": "Keep Vitest packages on one compatible release line",
+      "matchManagers": ["npm", "bun"],
+      "matchPackageNames": ["vitest", "@vitest/**"],
+      "groupName": "Vitest suite"
+    },
+    {
       "description": "Group Python ecosystem updates",
       "matchManagers": ["pip_requirements", "poetry", "pep621"],
       "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
