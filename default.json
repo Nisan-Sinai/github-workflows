@@ -65,6 +65,7 @@
     {
       "description": "Major updates always require manual review",
       "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true,
       "automerge": false
     }
   ]
