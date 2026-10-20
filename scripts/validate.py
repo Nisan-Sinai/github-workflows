@@ -57,6 +57,12 @@ def validate():
     check(manager.get('onboarding') is False, 'Manager must never silently onboard repositories')
     check(manager.get('requireConfig') == 'required', 'Every managed repository must explicitly opt in')
     check('repositories' not in manager, 'Public manager config must not contain repository inventory')
+    check(central_policy.get('platformAutomerge') is False,
+          'Renovate must evaluate checks itself before automerge')
+    check(central_policy.get('ignoreTests') is False,
+          'Renovate must never ignore repository checks')
+    check(central_policy.get('automergeStrategy') == 'squash',
+          'Automatic dependency updates must use squash merges')
     rules = central_policy.get('packageRules')
     check(isinstance(rules, list) and rules, 'Central update policy needs package rules')
     major = [r for r in rules if 'major' in r.get('matchUpdateTypes', [])]
@@ -64,6 +70,10 @@ def validate():
     automatic = [r for r in rules if r.get('automerge') is True]
     check(automatic and all('major' not in r.get('matchUpdateTypes', []) for r in automatic),
           'Automatic updates must exclude major versions')
+    check(all(r.get('platformAutomerge') is False for r in automatic),
+          'Automatic updates must not use unsafe platform automerge')
+    check(all(r.get('ignoreTests') is False for r in automatic),
+          'Automatic updates must wait for repository checks')
 
     paths = list(WORKFLOWS.glob('*.yml'))
     discovered = {p.name for p in paths}
