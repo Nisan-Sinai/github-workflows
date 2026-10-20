@@ -8,18 +8,24 @@
     ":dependencyDashboard"
   ],
   "timezone": "Asia/Jerusalem",
-  "schedule": ["before 9am on Monday"],
+  "schedule": [
+    "before 9am on Monday"
+  ],
   "minimumReleaseAge": "7 days",
   "internalChecksFilter": "strict",
   "prConcurrentLimit": 5,
   "branchConcurrentLimit": 5,
   "prHourlyLimit": 0,
   "rebaseWhen": "behind-base-branch",
-  "platformAutomerge": true,
+  "platformAutomerge": false,
   "automergeType": "pr",
+  "automergeStrategy": "squash",
+  "ignoreTests": false,
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 9am on Monday"]
+    "schedule": [
+      "before 9am on Monday"
+    ]
   },
   "vulnerabilityAlerts": {
     "enabled": true
@@ -28,43 +34,88 @@
   "packageRules": [
     {
       "description": "Group GitHub Actions and reusable workflow updates",
-      "matchManagers": ["github-actions"],
+      "matchManagers": [
+        "github-actions"
+      ],
       "groupName": "GitHub Actions and shared workflows"
     },
     {
       "description": "Group Node ecosystem updates",
-      "matchManagers": ["npm", "bun"],
-      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
+      "matchManagers": [
+        "npm",
+        "bun"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "pinDigest",
+        "digest"
+      ],
       "groupName": "Node dependencies"
     },
     {
       "description": "Keep Vitest packages on one compatible release line",
-      "matchManagers": ["npm", "bun"],
-      "matchPackageNames": ["vitest", "@vitest/**"],
+      "matchManagers": [
+        "npm",
+        "bun"
+      ],
+      "matchPackageNames": [
+        "vitest",
+        "@vitest/**"
+      ],
       "groupName": "Vitest suite"
     },
     {
       "description": "Group Python ecosystem updates",
-      "matchManagers": ["pip_requirements", "poetry", "pep621"],
-      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
+      "matchManagers": [
+        "pip_requirements",
+        "poetry",
+        "pep621"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "pinDigest",
+        "digest"
+      ],
       "groupName": "Python dependencies"
     },
     {
       "description": "Group .NET ecosystem updates",
-      "matchManagers": ["nuget"],
-      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
+      "matchManagers": [
+        "nuget"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "pinDigest",
+        "digest"
+      ],
       "groupName": ".NET dependencies"
     },
     {
-      "description": "Automatically merge only non-major updates after required repository checks pass",
-      "matchUpdateTypes": ["minor", "patch", "pin", "pinDigest", "digest"],
+      "description": "Automatically merge only non-major updates after every repository check succeeds",
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "pinDigest",
+        "digest"
+      ],
       "automerge": true,
       "automergeType": "pr",
-      "platformAutomerge": true
+      "platformAutomerge": false,
+      "ignoreTests": false,
+      "automergeStrategy": "squash"
     },
     {
       "description": "Major updates always require manual review",
-      "matchUpdateTypes": ["major"],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "dependencyDashboardApproval": true,
       "automerge": false
     }
