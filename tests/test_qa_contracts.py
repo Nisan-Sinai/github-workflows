@@ -144,7 +144,10 @@ class ReusableWorkflowContractTests(unittest.TestCase):
         self.assertEqual(f['jobs']['renovate']['environment'], 'central-manager')
         token_step = f['jobs']['renovate']['steps'][1]
         self.assertEqual(token_step['with']['owner'], '${{ github.repository_owner }}')
-        self.assertNotIn('repositories', token_step['with'])
+        repository_scope = token_step['with']['repositories']
+        self.assertIn('arrival-confirmations', repository_scope)
+        self.assertIn('nisan-sinai-technologies', repository_scope)
+        self.assertIn('MANAGER_PRIVATE_REPOSITORIES', repository_scope)
         token_permissions = {
             key: value
             for key, value in token_step['with'].items()
