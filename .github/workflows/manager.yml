@@ -1,5 +1,11 @@
 name: Central repository manager
 on:
+  push:
+    branches: [main]
+    paths:
+      - default.json
+      - renovate/global.json
+      - .github/workflows/manager.yml
   schedule:
     # Six passes let strict, rebased PRs converge during one Monday window.
     - cron: '0,30 3-5 * * 1'
@@ -50,4 +56,4 @@ jobs:
           token: ${{ steps.manager-token.outputs.token }}
         env:
           LOG_LEVEL: info
-          RENOVATE_FORCE: ${{ inputs.ignore_schedule && '{"schedule":null}' || '' }}
+          RENOVATE_FORCE: ${{ (github.event_name == 'push' || inputs.ignore_schedule) && '{"schedule":null}' || '' }}
