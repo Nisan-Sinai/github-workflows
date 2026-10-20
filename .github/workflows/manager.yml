@@ -39,6 +39,10 @@ jobs:
           client-id: ${{ secrets.MANAGER_CLIENT_ID }}
           private-key: ${{ secrets.MANAGER_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
+          repositories: |
+            arrival-confirmations
+            nisan-sinai-technologies
+            ${{ secrets.MANAGER_PRIVATE_REPOSITORIES }}
           permission-checks: write
           permission-contents: write
           permission-issues: write
