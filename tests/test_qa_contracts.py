@@ -122,7 +122,12 @@ class ReusableWorkflowContractTests(unittest.TestCase):
 
     def test_central_manager_is_scheduled_opt_in_and_app_scoped(self):
         f = flow('manager.yml')
-        self.assertEqual(set(f['on']), {'schedule', 'workflow_dispatch'})
+        self.assertEqual(set(f['on']), {'push', 'schedule', 'workflow_dispatch'})
+        self.assertEqual(f['on']['push']['branches'], ['main'])
+        self.assertEqual(
+            f['on']['push']['paths'],
+            ['default.json', 'renovate/global.json', '.github/workflows/manager.yml'],
+        )
         self.assertEqual(f['on']['schedule'], [{'cron': '0,30 3-5 * * 1'}])
         manual = f['on']['workflow_dispatch']['inputs']['ignore_schedule']
         self.assertEqual(manual['type'], 'boolean')
@@ -133,6 +138,7 @@ class ReusableWorkflowContractTests(unittest.TestCase):
         self.assertIn('MANAGER_PRIVATE_KEY', content)
         self.assertIn('MANAGER_REPOSITORIES', content)
         self.assertIn('RENOVATE_FORCE', content)
+        self.assertIn("github.event_name == 'push'", content)
         self.assertEqual(f['jobs']['renovate']['environment'], 'central-manager')
         token_permissions = {
             key: value
