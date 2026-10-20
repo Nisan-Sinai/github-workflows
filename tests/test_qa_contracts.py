@@ -136,13 +136,18 @@ class ReusableWorkflowContractTests(unittest.TestCase):
         content = (ROOT / '.github/workflows/manager.yml').read_text()
         self.assertIn('MANAGER_CLIENT_ID', content)
         self.assertIn('MANAGER_PRIVATE_KEY', content)
-        self.assertIn('MANAGER_REPOSITORIES', content)
+        self.assertNotIn('MANAGER_REPOSITORIES', content)
+        self.assertIn('/installation/repositories', content)
+        self.assertIn('::add-mask::', content)
         self.assertIn('RENOVATE_FORCE', content)
         self.assertIn("github.event_name == 'push'", content)
         self.assertEqual(f['jobs']['renovate']['environment'], 'central-manager')
+        token_step = f['jobs']['renovate']['steps'][1]
+        self.assertEqual(token_step['with']['owner'], '${{ github.repository_owner }}')
+        self.assertNotIn('repositories', token_step['with'])
         token_permissions = {
             key: value
-            for key, value in f['jobs']['renovate']['steps'][1]['with'].items()
+            for key, value in token_step['with'].items()
             if key.startswith('permission-')
         }
         self.assertEqual(
