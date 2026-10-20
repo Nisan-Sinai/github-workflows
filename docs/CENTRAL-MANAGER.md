@@ -1,50 +1,65 @@
 # Central repository manager
 
-The hub can run one self-hosted Renovate instance and manage every repository
-explicitly connected to it. The software and GitHub App are free. The public
-hub's standard GitHub-hosted runner minutes are free as well.
+The hub runs one self-hosted Renovate instance for repositories explicitly
+connected through the `Nisan-Sinai Central Manager` GitHub App. Renovate, the
+GitHub App and public-repository GitHub-hosted Actions usage are free.
+
+## Three-layer opt-in boundary
+
+A repository is managed only when all three conditions are true:
+
+1. The owner selects it in the GitHub App installation.
+2. The manager workflow includes it in the token's exact repository allowlist.
+3. Its default branch contains `renovate.json` extending
+   `github>Nisan-Sinai/github-workflows`.
+
+The App installation is the outer access boundary. The short-lived token is
+narrower: the two current public repositories are listed explicitly in the
+workflow, while future private repository names belong in the protected
+`MANAGER_PRIVATE_REPOSITORIES` environment secret. Public names may be added
+by reviewed hub PR. A future repository is never modified merely because it
+exists or because the App is installed on it.
+
+Before Renovate starts, the workflow enumerates only the repositories visible
+to that scoped token and masks both their full and short names in Actions logs.
+This keeps future private repository names out of the public log.
 
 ## Security model
 
 - Authentication uses a dedicated GitHub App, never a personal access token.
-- The App is installed only on repositories selected by the owner. During the
-  pilot it must be installed only on the temporary public test repository.
-- The workflow mints a short-lived installation token. The private key remains
-  in the `central-manager` environment's `MANAGER_PRIVATE_KEY` secret, the App
-  client id in `MANAGER_CLIENT_ID`, and the comma-separated allowlist in
-  `MANAGER_REPOSITORIES`.
-- A repository is managed only when it contains `renovate.json` extending
-  `github>Nisan-Sinai/github-workflows`. Installation alone is not opt-in.
-- The central policy opens update PRs for application dependencies, lockfiles,
-  GitHub Actions and SHA-pinned reusable workflows.
-- Patch, minor, pin and digest updates may auto-merge only after GitHub reports
-  the target repository's required checks successful. Major updates never
-  auto-merge.
-- Every connected default branch must have a fail-closed ruleset with real
-  required check names before auto-merge is enabled.
-- The connected repository must enable GitHub's auto-merge setting. Renovate
-  requests squash auto-merge, while the ruleset remains the authority that
-  blocks merging until every strict required check is green.
+- Long-lived values are stored only in the protected `central-manager`
+  environment: `MANAGER_CLIENT_ID`, `MANAGER_PRIVATE_KEY`, and the optional
+  `MANAGER_PRIVATE_REPOSITORIES` name allowlist.
+- Installation tokens are minted for one job and revoked in the action's post
+  step.
+- Checkout credential persistence is disabled.
+- Actions and the Renovate container are pinned to immutable digests.
+- Patch, minor, pin and digest updates may auto-merge. Renovate itself performs
+  the merge only after every observed status check succeeds
+  (`platformAutomerge: false`, `ignoreTests: false`).
+- Major updates require Dependency Dashboard approval and manual review.
+- Repository branch rules remain recommended as defense in depth for human
+  changes and direct pushes.
 
-## Weekly convergence window
+## Schedule and policy-change verification
 
-The manager runs six times on Monday at `03:00`, `03:30`, `04:00`, `04:30`,
-`05:00` and `05:30` UTC. That is early Monday morning in Jerusalem and remains
-inside Renovate's `before 9am on Monday` window across daylight-saving changes.
-Repeated passes are intentional: after one strict PR merges, the remaining PRs
-must be rebased and checked again. The five-PR concurrency ceiling plus six
-passes lets the complete batch converge during the same maintenance window.
+The regular manager window runs six times on Monday at `03:00`, `03:30`,
+`04:00`, `04:30`, `05:00` and `05:30` UTC. Repeated passes let Renovate
+merge one green update, rebase the rest and evaluate the next update during the
+same maintenance window.
 
-Manual dispatches honor the same schedule by default. For an explicit
-end-to-end verification outside Monday, set the `ignore_schedule` input to
-`true`. That run force-overrides only Renovate's branch-creation schedule; it
-does not bypass required checks, release-age rules, major-update policy or
-repository access controls.
+A push to `main` that changes `default.json`, `renovate/global.json` or
+the manager workflow triggers one immediate verification run and bypasses only
+Renovate's branch-creation schedule. It does not bypass release age, CI,
+major-update review or repository access controls.
 
-## One-time GitHub App setup
+Manual dispatches honor the Monday schedule unless
+`ignore_schedule: true` is deliberately selected.
 
-Create a private GitHub App owned by `Nisan-Sinai`, disable webhooks, and grant
-only these repository permissions required by self-hosted Renovate:
+## GitHub App setup
+
+Create a private GitHub App owned by `Nisan-Sinai`, disable webhooks, and
+grant only these repository permissions required by self-hosted Renovate:
 
 - Checks: read/write
 - Commit statuses: read/write
@@ -55,22 +70,22 @@ only these repository permissions required by self-hosted Renovate:
 - Pull requests: read/write
 - Workflows: read/write
 
-Install it on the temporary pilot repository only. Generate one private key,
-save it directly as the `MANAGER_PRIVATE_KEY` secret in the `central-manager`
-environment, save the App client id as `MANAGER_CLIENT_ID`, and set
-`MANAGER_REPOSITORIES` to the exact pilot repository name. Then delete the
-downloaded key file. Never paste the key in an issue, PR, chat, source file or
-log. The workflow also passes the allowlist to token minting, so even an App
-installed on more repositories cannot grant this job blanket access.
+Install it with **Only select repositories**. Generate one private key, save it
+directly as `MANAGER_PRIVATE_KEY` in the `central-manager` environment, save
+the client id as `MANAGER_CLIENT_ID`, then delete the downloaded key file.
+Never paste the key in source, an issue, PR, chat or log.
 
-For each connected repository, enable **Allow auto-merge** and automatic branch
-deletion in repository settings. These settings do not weaken branch rules:
-GitHub still refuses the merge until all required checks and the strict
-up-to-date requirement pass.
+The legacy `MANAGER_REPOSITORIES` secret is unused and should be deleted. For
+future private repositories, create or update `MANAGER_PRIVATE_REPOSITORIES`
+with names separated by commas or new lines.
 
 ## Connect a repository
 
-After its CI and branch rules are verified, add this file by reviewed PR:
+After its CI is verified:
+
+1. Select the repository in the App installation.
+2. Add its name to the exact public or private manager allowlist.
+3. Merge this opt-in file by reviewed PR:
 
 ```json
 {
@@ -79,14 +94,12 @@ After its CI and branch rules are verified, add this file by reviewed PR:
 }
 ```
 
-The App installation defines the maximum access boundary; `renovate.json`
-defines the repositories that have opted in. Future repositories are not
-modified merely because they exist.
+Removing any one of the three layers disconnects the repository.
 
-## Private repositories
+## Recovery
 
-The pilot uses a public test repository, so its name and Renovate logs are not
-sensitive. Before installing the App on a private repository, move the manager
-runner to a private administration repository or add verified log redaction;
-otherwise a public Actions log could reveal private repository metadata. The
-shared policy can remain in this public hub.
+To stop all centralized dependency writes immediately, revoke/delete
+`MANAGER_PRIVATE_KEY`. To disconnect one repository, remove it from the App
+installation and the token allowlist, then delete its `renovate.json` in a
+reviewed PR. Disconnecting the manager does not change application code or
+Supabase data.
