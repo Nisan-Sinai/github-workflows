@@ -60,6 +60,18 @@ class ReusableWorkflowContractTests(unittest.TestCase):
         self.assertIn('Start fresh Supabase and apply migrations', steps)
         self.assertIn('Shut down test database', steps)
 
+    def test_supabase_cloud_gate_rejects_privileged_keys(self):
+        f = flow('supabase-cloud-qa.yml')
+        inputs = f['on']['workflow_call']['inputs']
+        self.assertEqual(inputs['project-ref']['required'], 'true')
+        self.assertEqual(inputs['verify-command']['required'], 'true')
+        secrets = f['on']['workflow_call']['secrets']
+        self.assertEqual(secrets['SUPABASE_URL']['required'], 'true')
+        content = (ROOT / '.github/workflows/supabase-cloud-qa.yml').read_text()
+        self.assertIn('sb_secret_', content)
+        self.assertIn("role != 'anon'", content)
+        self.assertNotIn('SUPABASE_SERVICE_ROLE_KEY', content)
+
     def test_security_history_audit_and_strict_watch(self):
         f = flow('security-ci.yml')
         steps = f['jobs']['secrets']['steps']

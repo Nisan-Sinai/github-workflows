@@ -16,6 +16,7 @@ full SHA, and the consumer's existing checks must not be removed prematurely.
 | Production AND full dependency audit | `security-ci.yml`, `dependency-watch.yml` | Supply strict all-dependencies audit, schedule in caller |
 | Migrations/schema drift | `supabase-qa.yml` | Actual Supabase migrations, schema comparison tests |
 | Integration, RLS, 50-event isolation | `supabase-qa.yml` | Real integration/SQL tests, pass `event-matrix-command` for RSVP-grade parity |
+| Active Supabase Cloud app/API | `supabase-cloud-qa.yml` | Pass only the exact project URL and publishable/anon key; keep management and service-role credentials out of this gate |
 | Playwright browser E2E and axe accessibility | `browser-qa.yml` | Actual specs and appropriate credentials; no fake passing tests |
 | Lighthouse budgets and artifacts | `browser-qa.yml` | Real Lighthouse command, serve the app, enforce budgets |
 | Genuine Vercel commit status | `vercel-gate.yml` | Set exact context/project; configure Vercel |
