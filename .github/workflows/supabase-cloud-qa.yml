@@ -1,0 +1,97 @@
+name: Reusable Supabase Cloud smoke QA
+on:
+  workflow_call:
+    inputs:
+      project-ref:
+        type: string
+        required: true
+      node-version:
+        type: string
+        default: '24'
+      package-manager:
+        type: string
+        default: npm
+      working-directory:
+        type: string
+        default: '.'
+      install-command:
+        type: string
+        required: true
+      verify-command:
+        type: string
+        required: true
+    secrets:
+      SUPABASE_URL:
+        required: true
+      SUPABASE_PUBLISHABLE_KEY:
+        required: false
+      SUPABASE_ANON_KEY:
+        required: false
+permissions:
+  contents: read
+jobs:
+  cloud:
+    name: Supabase Cloud / app API smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory }}
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY || secrets.SUPABASE_ANON_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY || secrets.SUPABASE_ANON_KEY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ inputs.node-version }}
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: inputs.package-manager == 'pnpm'
+        with:
+          run_install: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        if: inputs.package-manager == 'bun'
+      - name: Configure Yarn Corepack
+        if: inputs.package-manager == 'yarn'
+        run: corepack enable
+      - name: Validate cloud target and public client key
+        env:
+          PROJECT_REF: ${{ inputs.project-ref }}
+          INSTALL: ${{ inputs.install-command }}
+          VERIFY: ${{ inputs.verify-command }}
+        run: |
+          set -euo pipefail
+          [[ "$PROJECT_REF" =~ ^[a-z]{20}$ ]] || { echo '::error::Invalid Supabase project ref'; exit 1; }
+          [[ "$SUPABASE_URL" == "https://${PROJECT_REF}.supabase.co" ]] || { echo '::error::Supabase URL does not match the approved project'; exit 1; }
+          [[ -n "$SUPABASE_PUBLISHABLE_KEY" ]] || { echo '::error::A publishable or legacy anon key is required'; exit 1; }
+          [[ "$SUPABASE_PUBLISHABLE_KEY" != sb_secret_* ]] || { echo '::error::Never pass a Supabase secret key to cloud smoke QA'; exit 1; }
+          [[ -n "$INSTALL" && -n "$VERIFY" ]] || { echo '::error::Locked install and cloud verification commands are required'; exit 1; }
+          python - <<'PY'
+          import base64, json, os, sys
+          key = os.environ['SUPABASE_PUBLISHABLE_KEY']
+          if key.startswith('sb_publishable_'):
+              sys.exit(0)
+          if key.count('.') != 2:
+              sys.exit('::error::Unsupported Supabase client key format')
+          payload = key.split('.')[1]
+          payload += '=' * (-len(payload) % 4)
+          try:
+              role = json.loads(base64.urlsafe_b64decode(payload)).get('role')
+          except Exception:
+              sys.exit('::error::Invalid legacy Supabase JWT')
+          if role != 'anon':
+              sys.exit('::error::Only a legacy anon key may be passed to cloud smoke QA')
+          PY
+      - name: Install locked dependencies
+        env:
+          COMMAND: ${{ inputs.install-command }}
+        run: bash -euo pipefail -c "$COMMAND"
+      - name: Verify the active Supabase Cloud project
+        env:
+          COMMAND: ${{ inputs.verify-command }}
+        run: bash -euo pipefail -c "$COMMAND"

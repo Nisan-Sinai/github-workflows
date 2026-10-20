@@ -17,7 +17,7 @@ REUSABLE = {
     'security-ci.yml', 'vercel-gate.yml', 'vercel-preview-deployment.yml',
     'dependabot-eligibility.yml', 'dependabot-automerge.yml',
     'advanced-node-qa.yml', 'browser-qa.yml', 'supabase-qa.yml',
-    'production-qa.yml', 'dependency-watch.yml',
+    'supabase-cloud-qa.yml', 'production-qa.yml', 'dependency-watch.yml',
 }
 RUNNERS = {'guard.yml', 'inventory.yml', 'manager.yml'}
 ALLOWED_EVENTS = {'workflow_call', 'pull_request', 'push', 'schedule', 'workflow_dispatch'}
