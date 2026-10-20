@@ -39,7 +39,6 @@ jobs:
           client-id: ${{ secrets.MANAGER_CLIENT_ID }}
           private-key: ${{ secrets.MANAGER_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
-          repositories: ${{ secrets.MANAGER_REPOSITORIES }}
           permission-checks: write
           permission-contents: write
           permission-issues: write
@@ -48,6 +47,17 @@ jobs:
           permission-statuses: write
           permission-vulnerability-alerts: read
           permission-workflows: write
+      - name: Mask App-installed repository identities
+        env:
+          GH_TOKEN: ${{ steps.manager-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          gh api --paginate /installation/repositories --jq '.repositories[].full_name' |
+          while IFS= read -r repository; do
+            [ -n "$repository" ] || continue
+            echo "::add-mask::$repository"
+            echo "::add-mask::${repository#*/}"
+          done
       - name: Run pinned central dependency manager
         uses: renovatebot/github-action@f0f41e5f2e706165f6814b1d0f0d0e319de7d1d9 # v46.3.8
         with:
