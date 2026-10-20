@@ -166,10 +166,15 @@ class ReusableWorkflowContractTests(unittest.TestCase):
         self.assertEqual(policy['prConcurrentLimit'], 5)
         self.assertEqual(policy['branchConcurrentLimit'], 5)
         self.assertEqual(policy['prHourlyLimit'], 0)
+        self.assertFalse(policy['platformAutomerge'])
+        self.assertFalse(policy['ignoreTests'])
+        self.assertEqual(policy['automergeStrategy'], 'squash')
         rules = policy['packageRules']
         automatic = [r for r in rules if r.get('automerge')]
         self.assertTrue(automatic)
         self.assertTrue(all('major' not in r['matchUpdateTypes'] for r in automatic))
+        self.assertTrue(all(r.get('platformAutomerge') is False for r in automatic))
+        self.assertTrue(all(r.get('ignoreTests') is False for r in automatic))
         major = [r for r in rules if 'major' in r.get('matchUpdateTypes', [])]
         self.assertTrue(major)
         self.assertTrue(all(r.get('automerge') is False for r in major))
