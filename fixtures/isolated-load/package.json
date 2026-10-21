@@ -1,0 +1,10 @@
+{
+  "name": "isolated-load-smoke",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.28.5",
+  "scripts": {
+    "build": "node --check server.mjs && node --check client.mjs",
+    "start": "node server.mjs"
+  }
+}

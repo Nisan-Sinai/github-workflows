@@ -79,3 +79,12 @@ jobs:
     with:
       verify-command: |
         test "$(psql "$DATABASE_URL" -Atqc 'SELECT 1')" = 1
+  smoke-load:
+    name: Hub / reusable isolated load smoke
+    uses: ./.github/workflows/isolated-load-qa.yml
+    with:
+      working-directory: fixtures/isolated-load
+      safety-command: node --test safety.mjs
+      build-command: pnpm build
+      start-command: pnpm start
+      load-command: node client.mjs
