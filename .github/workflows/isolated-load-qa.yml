@@ -107,7 +107,7 @@ jobs:
           server_pid=$!
           cleanup() {
             kill -TERM -- "-$server_pid" 2>/dev/null || true
-            for attempt in $(seq 1 20); do
+            for _ in $(seq 1 20); do
               if ! kill -0 -- "-$server_pid" 2>/dev/null; then break; fi
               sleep 0.1
             done
@@ -115,7 +115,7 @@ jobs:
             wait "$server_pid" 2>/dev/null || true
           }
           trap cleanup EXIT
-          for attempt in $(seq 1 60); do
+          for _ in $(seq 1 60); do
             if curl --fail --silent --max-time 2 http://127.0.0.1:3000/api/health > /dev/null; then break; fi
             if ! kill -0 "$server_pid" 2>/dev/null; then
               echo '::error::Isolated application server exited before readiness'
