@@ -30,12 +30,12 @@
 
 ## High-assurance QA (including Arrival Confirmations coverage)
 
-The hub has **14 opt-in reusable gates** and three hub-only workflows. In addition
+The hub has **16 opt-in reusable gates** and three hub-only workflows. In addition
 to the language-specific core gates, it defines: advanced formatting/coverage/
 bundle security, Playwright/accessibility/Lighthouse, fresh Supabase migrations/
 integration/RLS, strict scheduled dependency audits, verified Vercel statuses
 and Preview deployment registration, read-only Supabase Cloud app/API smoke,
-production release verification, and
+read-only deployment smoke, production release verification, and
 review-controlled Dependabot eligibility/auto-merge.
 
 See [the precise Arrival Confirmations parity and limitations matrix](docs/ARRIVAL-PARITY.md)

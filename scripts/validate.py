@@ -18,6 +18,7 @@ REUSABLE = {
     'dependabot-eligibility.yml', 'dependabot-automerge.yml',
     'advanced-node-qa.yml', 'browser-qa.yml', 'supabase-qa.yml',
     'supabase-cloud-qa.yml', 'postgres-contract.yml', 'production-qa.yml', 'dependency-watch.yml',
+    'deployment-smoke.yml',
 }
 RUNNERS = {'guard.yml', 'inventory.yml', 'manager.yml'}
 ALLOWED_EVENTS = {'workflow_call', 'pull_request', 'push', 'schedule', 'workflow_dispatch'}

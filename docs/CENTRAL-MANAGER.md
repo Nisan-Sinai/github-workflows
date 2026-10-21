@@ -75,7 +75,7 @@ directly as `MANAGER_PRIVATE_KEY` in the `central-manager` environment, save
 the client id as `MANAGER_CLIENT_ID`, then delete the downloaded key file.
 Never paste the key in source, an issue, PR, chat or log.
 
-The legacy `MANAGER_REPOSITORIES` secret is unused and should be deleted. For
+The legacy `MANAGER_REPOSITORIES` secret was removed after explicit owner approval. For
 future private repositories, create or update `MANAGER_PRIVATE_REPOSITORIES`
 with names separated by commas or new lines.
 
@@ -116,6 +116,22 @@ For repository-specific PostgreSQL migration/RLS scripts, use
 PostgreSQL 17 service and passes only its localhost `DATABASE_URL` to the
 consumer command; no Supabase Cloud credentials are accepted. The hub smoke
 test executes a real query against this service.
+
+Use `deployment-smoke.yml` for an existing read-only public-site smoke script.
+Its HTTPS URL is passed as `SITE_URL` through the environment, never inserted
+into shell source, so a manual URL override cannot inject shell commands.
+This lightweight check does not prove the exact deployed commit; keep
+`production-qa.yml` for release-aware verification. Keep Supabase public keys
+in a separate `supabase-cloud-qa.yml` caller, not in the public-site smoke job.
+
+The connected consumers run a separate dependency watch every six hours.
+An accepted, documented development-only advisory is not a vulnerability-free
+audit. Nisan's narrowly scoped braces exception expires on 2026-11-04 at
+00:00 UTC and does not apply to production dependencies or any other advisory.
+Native Dependabot security PR generation is disabled in these consumers to
+avoid duplicate update managers; vulnerability alerts remain enabled for Renovate.
+To restore native security PRs, enable **Dependabot security updates** in the
+consumer's security settings (or PUT its `automated-security-fixes` REST endpoint).
 
 ## Recovery
 

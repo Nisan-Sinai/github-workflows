@@ -9,6 +9,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from validate import parse_yaml
+BASH = shutil.which('bash')
 
 
 class PostgresContractTests(unittest.TestCase):
@@ -29,26 +30,26 @@ class PostgresContractTests(unittest.TestCase):
         self.assertRegex(self.job['services']['postgres']['image'], r'^postgres:17@sha256:[0-9a-f]{64}$')
         self.assertEqual(self.job['timeout-minutes'], '15')
 
-    @unittest.skipUnless(shutil.which('bash'), 'Bash is required to execute workflow command guards')
+    @unittest.skipUnless(BASH, 'Bash is required to execute workflow command guards')
     def test_empty_and_whitespace_only_commands_fail_closed(self):
         guard = next(step for step in self.job['steps']
                      if step.get('name') == 'Require a database contract command')['run']
         for command in ('', ' ', '\n\t'):
             with self.subTest(command=repr(command)):
                 result = subprocess.run(
-                    ['bash', '-euo', 'pipefail', '-c', guard],
+                    [BASH, '-euo', 'pipefail', '-c', guard],
                     env={**os.environ, 'VERIFY': command},
                     capture_output=True, text=True,
                 )
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn('verify-command must not be blank', result.stdout)
 
-    @unittest.skipUnless(shutil.which('bash'), 'Bash is required to execute workflow command guards')
+    @unittest.skipUnless(BASH, 'Bash is required to execute workflow command guards')
     def test_nonempty_command_passes_validation_without_being_executed(self):
         guard = next(step for step in self.job['steps']
                      if step.get('name') == 'Require a database contract command')['run']
         result = subprocess.run(
-            ['bash', '-euo', 'pipefail', '-c', guard],
+            [BASH, '-euo', 'pipefail', '-c', guard],
             env={**os.environ, 'VERIFY': 'exit 99'},
             capture_output=True, text=True,
         )
