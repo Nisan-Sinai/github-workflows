@@ -22,6 +22,7 @@ full SHA, and the consumer's existing checks must not be removed prematurely.
 | Genuine Vercel commit status | `vercel-gate.yml` | Set exact context/project; configure Vercel |
 | Register an actual verified Preview deployment | `vercel-preview-deployment.yml` | Opt in, grant `deployments: write`, specify project |
 | Production content and exact deployed commit | `production-qa.yml` | Implement a verifier that **really checks** production SHA; schedule/push in caller |
+| Isolated HTTP load and measured budgets | `isolated-load-qa.yml` | Keep app-specific safety/load scripts; localhost only, no production-capacity claim |
 | Patch/Minor Dependabot gate | `dependabot-eligibility.yml`, `dependabot-automerge.yml` | Explicit adoption and exact check names; merge off by default |
 | Regular vulnerability monitoring | `dependency-watch.yml` | Schedule in caller, strict install and audit command |
 | WhatsApp reminders and live business features | **Not generalized** | Keep in the application (currently disabled in RSVP) |
