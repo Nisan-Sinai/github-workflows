@@ -1,0 +1,47 @@
+name: Reusable read-only deployment smoke
+on:
+  workflow_call:
+    inputs:
+      deployment-url:
+        type: string
+        required: true
+      verify-command:
+        type: string
+        required: true
+      node-version:
+        type: string
+        default: '24'
+permissions:
+  contents: read
+jobs:
+  smoke:
+    name: Deployment / read-only smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: Validate deployment inputs
+        env:
+          SITE_URL: ${{ inputs.deployment-url }}
+          VERIFY_COMMAND: ${{ inputs.verify-command }}
+        run: |
+          node --input-type=module - <<'JS'
+          const url = new URL(process.env.SITE_URL);
+          if (url.protocol !== 'https:' || url.username || url.password) {
+            throw new Error('Deployment URL must be HTTPS without embedded credentials');
+          }
+          if (!process.env.VERIFY_COMMAND?.trim()) {
+            throw new Error('A read-only deployment verification command is required');
+          }
+          JS
+      - name: Verify public deployment
+        env:
+          SITE_URL: ${{ inputs.deployment-url }}
+          COMMAND: ${{ inputs.verify-command }}
+        shell: bash
+        run: bash -euo pipefail -c "$COMMAND"

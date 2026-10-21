@@ -67,6 +67,12 @@ jobs:
       install-command: python -m pip install 'PyYAML==6.0.3'
       lint-command: python -m compileall -q scripts tests
       test-command: python -m unittest discover -s tests -v
+  smoke-deployment:
+    name: Hub / reusable deployment smoke
+    uses: ./.github/workflows/deployment-smoke.yml
+    with:
+      deployment-url: https://example.com
+      verify-command: test "$SITE_URL" = 'https://example.com' && node --version
   smoke-postgres:
     name: Hub / reusable PostgreSQL smoke
     uses: ./.github/workflows/postgres-contract.yml

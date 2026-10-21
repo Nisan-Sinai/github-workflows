@@ -92,6 +92,24 @@ class ReusableWorkflowContractTests(unittest.TestCase):
         for name in ('production-url', 'expected-sha', 'verify-command'):
             self.assertEqual(inputs[name]['required'], 'true')
 
+    def test_deployment_smoke_is_read_only_and_keeps_url_out_of_shell_source(self):
+        f = flow('deployment-smoke.yml')
+        call = f['on']['workflow_call']
+        for name in ('deployment-url', 'verify-command'):
+            self.assertEqual(call['inputs'][name]['required'], 'true')
+        self.assertNotIn('secrets', call)
+        self.assertEqual(f['permissions'], {'contents': 'read'})
+        job = f['jobs']['smoke']
+        self.assertEqual(job['timeout-minutes'], '10')
+        for step in job['steps']:
+            self.assertNotIn('${{', step.get('run', ''))
+        verify = next(s for s in job['steps'] if s.get('name') == 'Verify public deployment')
+        self.assertEqual(verify['env']['SITE_URL'], '${{ inputs.deployment-url }}')
+        self.assertEqual(verify['run'], 'bash -euo pipefail -c "$COMMAND"')
+        content = (ROOT / '.github/workflows/deployment-smoke.yml').read_text()
+        self.assertIn("url.protocol !== 'https:'", content)
+        self.assertIn('url.username || url.password', content)
+
     def test_vercel_checks_exact_head_and_sender(self):
         content = (ROOT / '.github/workflows/vercel-gate.yml').read_text()
         self.assertIn('github.event.pull_request.head.sha', content)
