@@ -67,3 +67,9 @@ jobs:
       install-command: python -m pip install 'PyYAML==6.0.3'
       lint-command: python -m compileall -q scripts tests
       test-command: python -m unittest discover -s tests -v
+  smoke-postgres:
+    name: Hub / reusable PostgreSQL smoke
+    uses: ./.github/workflows/postgres-contract.yml
+    with:
+      verify-command: |
+        test "$(psql "$DATABASE_URL" -Atqc 'SELECT 1')" = 1
