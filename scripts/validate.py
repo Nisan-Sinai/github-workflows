@@ -17,7 +17,7 @@ REUSABLE = {
     'security-ci.yml', 'vercel-gate.yml', 'vercel-preview-deployment.yml',
     'dependabot-eligibility.yml', 'dependabot-automerge.yml',
     'advanced-node-qa.yml', 'browser-qa.yml', 'supabase-qa.yml',
-    'supabase-cloud-qa.yml', 'production-qa.yml', 'dependency-watch.yml',
+    'supabase-cloud-qa.yml', 'postgres-contract.yml', 'production-qa.yml', 'dependency-watch.yml',
 }
 RUNNERS = {'guard.yml', 'inventory.yml', 'manager.yml'}
 ALLOWED_EVENTS = {'workflow_call', 'pull_request', 'push', 'schedule', 'workflow_dispatch'}
@@ -116,6 +116,15 @@ def validate():
                               f'{path}: action must use an immutable 40-character commit SHA: {ref}')
                     check(step.get('continue-on-error') != 'true',
                           f'{path}: silent failure suppression is forbidden')
+        if path.name == 'security-ci.yml':
+            secret_steps = data['jobs']['secrets']['steps']
+            check(any(s.get('uses', '').startswith('actions/checkout@')
+                      and s.get('with', {}).get('fetch-depth') == '0'
+                      for s in secret_steps),
+                  'Secret scan must fetch the complete Git history')
+            check(any(s.get('run') == 'gitleaks git --redact --verbose .'
+                      for s in secret_steps),
+                  'Secret scan must scan the complete Git history with redaction')
         if path.name == 'dependabot-automerge.yml':
             gate_permissions = data['jobs']['gate'].get('permissions', {})
             check(gate_permissions.get('contents') == 'write', 'Auto-merge needs scoped write')

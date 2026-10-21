@@ -1,0 +1,63 @@
+name: Reusable PostgreSQL migration and RLS contract
+on:
+  workflow_call:
+    inputs:
+      verify-command:
+        type: string
+        required: true
+      node-version:
+        type: string
+        default: '24'
+      working-directory:
+        type: string
+        default: '.'
+permissions:
+  contents: read
+jobs:
+  contract:
+    name: Supabase migrations · RLS contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17@sha256:c469d92cbb89e123ba7c2c7c1a8815572943584085c37b007bacb43150a8c9e4
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.working-directory }}
+    env:
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: Require a database contract command
+        env:
+          VERIFY: ${{ inputs.verify-command }}
+        run: |
+          set -euo pipefail
+          [[ -n "${VERIFY//[[:space:]]/}" ]] || { echo '::error::verify-command must not be blank'; exit 1; }
+      - name: Ensure psql is available
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends postgresql-client
+          fi
+          psql --version
+      - name: Apply local migrations and verify the RLS contract
+        env:
+          COMMAND: ${{ inputs.verify-command }}
+        run: bash -euo pipefail -c "$COMMAND"

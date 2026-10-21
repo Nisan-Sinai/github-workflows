@@ -96,6 +96,27 @@ After its CI is verified:
 
 Removing any one of the three layers disconnects the repository.
 
+### Keep shared workflow pins current
+
+Pin reusable workflow calls to a tested 40-character hub commit and retain
+`# main` as a trailing comment:
+
+```yaml
+uses: Nisan-Sinai/github-workflows/.github/workflows/node-ci.yml@REPLACE_WITH_REAL_40_CHAR_COMMIT_SHA # main
+```
+
+The SHA keeps each run immutable. The comment tells Renovate which ref to track,
+so the manager can propose a new SHA by PR when the hub changes. Bare SHA pins
+without a tag or branch comment are disabled by Renovate because their update
+source is unknown. The normal age, CI and merge policy still applies.
+
+For repository-specific PostgreSQL migration/RLS scripts, use
+`postgres-contract.yml` as shown in
+`examples/postgres-contract-caller.yml.example`. It provisions a fresh local
+PostgreSQL 17 service and passes only its localhost `DATABASE_URL` to the
+consumer command; no Supabase Cloud credentials are accepted. The hub smoke
+test executes a real query against this service.
+
 ## Recovery
 
 To stop all centralized dependency writes immediately, revoke/delete

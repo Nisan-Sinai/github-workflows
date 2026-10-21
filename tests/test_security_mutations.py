@@ -1,4 +1,5 @@
 """Negative tests proving hub policy fails closed when controls are weakened."""
+import json
 import re
 from pathlib import Path
 import shutil
@@ -63,6 +64,42 @@ class WorkflowMutationTests(unittest.TestCase):
     def test_privileged_trigger_is_rejected(self):
         self.change('guard.yml', '  pull_request:', '  pull_request_target:')
         with self.assertRaisesRegex(ValueError, 'unexpected trigger'):
+            catalog_validator.validate()
+
+    def test_shallow_secret_history_is_rejected(self):
+        self.change('security-ci.yml', 'fetch-depth: 0', 'fetch-depth: 1')
+        with self.assertRaisesRegex(ValueError, 'complete Git history'):
+            catalog_validator.validate()
+
+    def test_range_only_secret_scan_is_rejected(self):
+        self.change('security-ci.yml',
+                    'gitleaks git --redact --verbose .',
+                    'gitleaks git --redact --verbose --log-opts=-1 .')
+        with self.assertRaisesRegex(ValueError, 'complete Git history with redaction'):
+            catalog_validator.validate()
+
+    def test_unredacted_secret_output_is_rejected(self):
+        self.change('security-ci.yml',
+                    'gitleaks git --redact --verbose .',
+                    'gitleaks git --verbose .')
+        with self.assertRaisesRegex(ValueError, 'complete Git history with redaction'):
+            catalog_validator.validate()
+
+    def test_platform_automerge_cannot_bypass_test_evaluation(self):
+        target = self.root / 'default.json'
+        policy = json.loads(target.read_text())
+        policy['platformAutomerge'] = True
+        target.write_text(json.dumps(policy))
+        with self.assertRaisesRegex(ValueError, 'evaluate checks itself'):
+            catalog_validator.validate()
+
+    def test_automatic_updates_cannot_ignore_tests(self):
+        target = self.root / 'default.json'
+        policy = json.loads(target.read_text())
+        rule = next(rule for rule in policy['packageRules'] if rule.get('automerge'))
+        rule['ignoreTests'] = True
+        target.write_text(json.dumps(policy))
+        with self.assertRaisesRegex(ValueError, 'wait for repository checks'):
             catalog_validator.validate()
 
     def test_hidden_new_reusable_workflow_must_be_registered(self):

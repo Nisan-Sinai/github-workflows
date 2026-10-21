@@ -1,0 +1,13 @@
+name: Database CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  migrations:
+    uses: Nisan-Sinai/github-workflows/.github/workflows/postgres-contract.yml@REPLACE_WITH_REAL_40_CHAR_COMMIT_SHA # main
+    with:
+      node-version: '24'
+      verify-command: npm run test:migrations
