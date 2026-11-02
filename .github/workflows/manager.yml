@@ -63,7 +63,7 @@ jobs:
             echo "::add-mask::${repository#*/}"
           done
       - name: Run pinned central dependency manager
-        uses: renovatebot/github-action@f0f41e5f2e706165f6814b1d0f0d0e319de7d1d9 # v46.3.8
+        uses: renovatebot/github-action@2804199d260ad00c1fae0e9e842888369391c776 # v46.3.10
         with:
           configurationFile: renovate/global.json
           renovate-image: renovate/renovate@sha256:d4821e4630896b093a9a4f2f0f6e3fa68c707cc54fb3a403762ede943930f39b # 44.156.1
